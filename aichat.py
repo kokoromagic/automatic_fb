@@ -651,6 +651,44 @@ try:
 
                     print("Đã đọc xong!")
 
+                    command_result = ""
+                    reset = False
+                    def reset_chat(msg):
+                        global reset
+                        reset = True
+                        chat_histories[message_id] = [{"message_type" : "new_chat", "info" : msg}]
+                        return f'Bot reset with new memory "{msg}"'
+
+                    # Dictionary mapping arg1 to functions
+                    func = {                    
+                        "totp": totp_cmd,
+                        "reset": reset_chat,
+                    }
+
+                    def parse_and_execute(command):
+                        # Parse the command
+                        args = shlex.split(command)
+                        
+                        # Check if the command starts with /cmd
+                        if len(args) < 3 or args[0] != "/cmd":
+                            return "Invalid command format. Use: /cmd arg1 arg2"
+                        
+                        # Extract arg1 and arg2
+                        arg1, arg2 = args[1], args[2]
+                        
+                        # Check if arg1 is in func and execute
+                        if arg1 in func:
+                            try:
+                                return func[arg1](arg2)
+                            except Exception as e:
+                                return f"Error while executing function: {e}"
+                        else:
+                            return f"Unknown command: {arg1}"
+
+                    for msg in chat_history_new:
+                        if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
+                            command_result += parse_and_execute(msg["info"]["msg"]) + "\n"
+
                     chat_history.extend(chat_history_new)
 
                     if len(chat_history) <= 0:
@@ -692,27 +730,38 @@ try:
                     prompt_list.append(">> TYPE YOUR MESSAGE TO REPLY")
                     
                     caption = None
+                    
+                    if command_result:
+                        try:
+                            button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
+                            driver.execute_script("arguments[0].click();", button)
+                            button.send_keys(Keys.CONTROL + "a")  # Select all text
+                            button.send_keys(Keys.DELETE)  # Delete the selected text
+                            time.sleep(0.5)
+                            button.send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(command_result) + "\n"))
+                        except:
+                            pass
                     for _x in range(10):
+                        if reset:
+                            break
                         try:
                             button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
                             driver.execute_script("arguments[0].click();", button)
                             button.send_keys(" ")
-                            if caption == None:
-                                if is_command_msg:
-                                    caption = parse_and_execute(last_msg["info"]["msg"])
-                                else:
-                                    caption = model.generate_content(prompt_list).text
-                            reply_msg, img_keywords = extract_image_keywords(caption)
+                            if caption is None and not is_command_msg:
+                                caption = model.generate_content(prompt_list).text
+                            if caption is not None and not is_command_msg:
+                                reply_msg, img_keywords = extract_image_keywords(caption)
 
-                            print("AI Trả lời:", caption)
-                            if caption.strip() == "/SKIP":
-                                break
-                            for img_keyword in img_keywords:
-                                drop_image(driver, button, download_image_to_bytesio(get_random_image_link(img_keyword)))
-                            button.send_keys(Keys.CONTROL + "a")  # Select all text
-                            button.send_keys(Keys.DELETE)  # Delete the selected text
-                            time.sleep(0.5)
-                            button.send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
+                                print("AI Trả lời:", caption)
+                                if caption.strip() == "/SKIP":
+                                    break
+                                for img_keyword in img_keywords:
+                                    drop_image(driver, button, download_image_to_bytesio(get_random_image_link(img_keyword)))
+                                button.send_keys(Keys.CONTROL + "a")  # Select all text
+                                button.send_keys(Keys.DELETE)  # Delete the selected text
+                                time.sleep(0.5)
+                                button.send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
 
                             chat_history.append({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : caption}, "mentioned_message" : None })
                             chat_histories[message_id] = chat_history

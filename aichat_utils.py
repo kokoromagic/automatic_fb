@@ -152,31 +152,6 @@ import pyotp
 def totp_cmd(secret):
     return pyotp.TOTP(secret).now()
 
-# Dictionary mapping arg1 to functions
-func = {
-    "totp": totp_cmd,
-}
-
-def parse_and_execute(command):
-    # Parse the command
-    args = shlex.split(command)
-    
-    # Check if the command starts with /cmd
-    if len(args) < 3 or args[0] != "/cmd":
-        return "Invalid command format. Use: /cmd arg1 arg2"
-    
-    # Extract arg1 and arg2
-    arg1, arg2 = args[1], args[2]
-    
-    # Check if arg1 is in func and execute
-    if arg1 in func:
-        try:
-            return func[arg1](arg2)
-        except Exception as e:
-            return f"Error while executing function: {e}"
-    else:
-        return f"Unknown command: {arg1}"
-
 def parse_opts_string(input_str):
     result = {}
     for item in input_str.split(','):
