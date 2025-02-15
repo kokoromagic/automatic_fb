@@ -757,7 +757,7 @@ try:
                                 if caption.strip() == "/SKIP":
                                     break
                                 for img_keyword in img_keywords:
-                                    drop_image(driver, button, download_image_to_bytesio(get_random_image_link(img_keyword)))
+                                    drop_image(driver, button, download_image_to_bytesio(get_random_image_link(img_keyword, 40)))
                                 button.send_keys(Keys.CONTROL + "a")  # Select all text
                                 button.send_keys(Keys.DELETE)  # Delete the selected text
                                 time.sleep(0.5)
