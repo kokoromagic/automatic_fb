@@ -757,7 +757,14 @@ try:
                                 if caption.strip() == "/SKIP":
                                     break
                                 for img_keyword in img_keywords:
-                                    drop_image(driver, button, download_image_to_bytesio(get_random_image_link(img_keyword, 40)))
+                                    while True:
+                                        try:
+                                            image_link = get_random_image_link(img_keyword, 40)
+                                            drop_image(driver, button, download_image_to_bytesio(image_link))
+                                            print(f"Ai gửi ảnh từ: {image_link}")
+                                            break
+                                        except:
+                                            pass
                                 button.send_keys(Keys.CONTROL + "a")  # Select all text
                                 button.send_keys(Keys.DELETE)  # Delete the selected text
                                 time.sleep(0.5)
