@@ -63,12 +63,11 @@ if ai_prompt is not None and ai_prompt != "":
         upload_file(GITHUB_TOKEN, GITHUB_REPO, f_intro_txt, STORAGE_BRANCE, f_intro_txt)
 
 if if_running_on_github_workflows:
-    for filename in [ f_intro_txt, f_rules_txt ]:
-        try:
-            get_file(GITHUB_TOKEN, GITHUB_REPO, filename, STORAGE_BRANCE, filename)
-        except Exception:
-            # Else using default one
-            upload_file(GITHUB_TOKEN, GITHUB_REPO, filename, STORAGE_BRANCE, filename)
+    try:
+        get_file(GITHUB_TOKEN, GITHUB_REPO, f_intro_txt, STORAGE_BRANCE, f_intro_txt)
+    except Exception:
+        # Else using default one
+        upload_file(GITHUB_TOKEN, GITHUB_REPO, f_intro_txt, STORAGE_BRANCE, f_intro_txt)
 
 username = login_info["username"]
 password = login_info["password"]
