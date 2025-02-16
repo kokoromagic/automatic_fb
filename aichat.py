@@ -199,8 +199,15 @@ try:
     genai.configure(api_key=genai_key)
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",
-        system_instruction = instruction
+        system_instruction=instruction,  # Your overall guidance to the model
+        safety_settings={
+            'harm_category_harassment': 'BLOCK_NONE',
+            'harm_category_hate_speech': 'BLOCK_NONE',
+            'harm_category_sexually_explicit': 'BLOCK_NONE',
+            'harm_category_dangerous_content': 'BLOCK_NONE',
+        }
     )
+
     for text in instruction:
         print(text)
     
