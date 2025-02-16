@@ -766,7 +766,11 @@ try:
                             driver.execute_script("arguments[0].click();", button)
                             button.send_keys(" ")
                             if caption is None and not is_command_msg:
-                                caption = model.generate_content(prompt_list).text
+                                response = model.generate_content(prompt_list)
+                                if not response.candidates:
+                                    caption = "(y)"
+                                else:
+                                    caption = response.text
                             if caption is not None and not is_command_msg:
                                 reply_msg, img_keywords = extract_image_keywords(caption)
 
