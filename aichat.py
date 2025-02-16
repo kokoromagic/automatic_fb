@@ -150,6 +150,8 @@ try:
             print(e)
 
     chat_histories = pickle_from_file(f_chat_history, {})
+    if chat_histories.get("status", None) is None:
+        chat_histories["status"] = {}
 
     self_facebook_info = pickle_from_file(f_self_facebook_info, { "Facebook name" : myname, "Facebook url" :  driver.current_url })
     
@@ -659,10 +661,20 @@ try:
                         chat_histories[message_id] = [{"message_type" : "new_chat", "info" : msg}]
                         return f'Bot reset with new memory "{msg}"'
 
+                    def mute_chat(mode):
+                        if mode == "true" or mode == "1":
+                            chat_histories["status"][message_id] = False
+                            return f'Bot has been muted'
+                        if mode == "false" or mode == "0":
+                            chat_histories["status"][message_id] = True
+                            return f'Bot has been unmuted'
+                        return f'Unknown mute mode! Use "1" to mute the bot or "0" to unmute the bot.'
+
                     # Dictionary mapping arg1 to functions
                     func = {                    
                         "totp": totp_cmd,
                         "reset": reset_chat,
+                        "mute" : mute_chat,
                     }
 
                     def parse_and_execute(command):
@@ -743,6 +755,8 @@ try:
                             pass
                     for _x in range(10):
                         if reset:
+                            break
+                        if chat_histories["status"].get(message_id, True) == False:
                             break
                         try:
                             button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
