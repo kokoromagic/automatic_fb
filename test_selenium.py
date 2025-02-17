@@ -10,9 +10,6 @@ try:
     drivers = []
     scoped_dir = None
     for opt in [
-        (scoped_dir, True, False),
-        (scoped_dir, True, True),
-        (scoped_dir, False, False),
         (scoped_dir, False, True),
     ]:
         driver = __chrome_driver__(*opt)
