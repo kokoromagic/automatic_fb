@@ -4,11 +4,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from fb_getcookies import __chrome_driver__
 import time
-#import os
+import os
 
 try:
     drivers = []
-    scoped_dir = None
+    scoped_dir = os.getenv("SCPDIR")
     for opt in [
         (scoped_dir, False, True),
     ]:
