@@ -20,6 +20,7 @@ from selenium.webdriver.common.keys import Keys  # For keyboard actions
 import google.generativeai as genai  # For generative AI functionalities
 from pickle_utils import *  # For pickling data
 from github_utils import *  # For GitHub file operations
+from fbparser import get_facebook_id
 from fb_getcookies import __chrome_driver__, is_facebook_logged_out, base_url_with_path  # For Facebook cookie handling
 from aichat_utils import *  # For custom utility functions
 
@@ -157,7 +158,8 @@ try:
             "?sk=about_family_and_relationships", 
             "?sk=about_details"
         ]
-    
+    self_fbid = get_facebook_id(driver.current_url)
+    print(f"ID là {self_fbid}")
     if self_facebook_info.get("Last access", 0) == 0:
         self_facebook_info["Last access"] = int(time.time())
         # Loop through the profile sections
@@ -346,6 +348,7 @@ try:
                         continue
 
                 for chat_info in chat_list:
+                    is_group_chat = False
                     chat_btn = chat_info["obj"]
                     driver.execute_script("arguments[0].click();", chat_btn)
                     time.sleep(1)
@@ -432,6 +435,7 @@ try:
                             if last_access_ts == 0 and (if_running_on_github_workflows):
                                 upload_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE)
                         else:
+                            is_group_chat = True
                             who_chatted = chat_info["name"]
                             facebook_info = { "Facebook group name" : who_chatted }
                     except Exception as e:
@@ -498,6 +502,13 @@ try:
                         pass
 
                     print("Đang đọc tin nhắn...")
+
+                    command_result = ""
+                    reset = False
+                    should_not_chat = chat_histories["status"].get(message_id, True) == False
+                    max_video = 10
+                    num_video = 0
+
                     for _x in range(3):
                         stop = False
                         for msg_element in reversed(msg_table.find_elements(By.CSS_SELECTOR, 'div[role="row"]:not([__read])')):
@@ -568,7 +579,10 @@ try:
                         
                         msg = None
                         try:
-                            msg = msg_element.find_element(By.CSS_SELECTOR, 'div[dir="auto"][class^="html-div "]').text
+                            msg_frame = msg_element.find_element(By.CSS_SELECTOR, 'div[dir="auto"][class^="html-div "]')
+                            msg = msg_frame.text
+                            mentioned_to_me = msg_frame.find_elements(By.CSS_SELECTOR, f'a[href="https://www.facebook.com/{self_fbid}/"]')
+                            should_not_chat = should_not_chat and (len(mentioned_to_me) == 0) # when mute and not mentioned
                         except Exception:
                             pass
                         
@@ -654,11 +668,6 @@ try:
                             pass
 
                     print("Đã đọc xong!")
-
-                    command_result = ""
-                    reset = False
-                    max_video = 10
-                    num_video = 0
 
                     def reset_chat(msg):
                         global reset
@@ -767,7 +776,7 @@ try:
                     for _x in range(10):
                         if reset:
                             break
-                        if chat_histories["status"].get(message_id, True) == False:
+                        if should_not_chat:
                             break
                         try:
                             button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
