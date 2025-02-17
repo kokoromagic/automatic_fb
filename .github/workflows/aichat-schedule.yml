@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       username:
-        description: "Input Facebook username (email/phone)"
-        required: true
+        description: "Input Facebook username (optional)"
+        required: false
       password:
         description: "Input Facebook password (optional)"
         required: false
@@ -25,6 +25,9 @@ on:
         type: number
       cookies_text:
         description: "Input cookies (optional)"
+        required: false
+      alt_cookies_text:
+        description: "Input alternative cookies (optional)"
         required: false
       ai_prompt:
         description: "Input the persona introduction for AI instruction (optional, refer to setup/introduction.txt)"
