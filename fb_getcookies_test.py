@@ -21,6 +21,7 @@ f_intro_txt = "setup/introduction.txt"
 f_rules_txt = "setup/rules.txt"
 
 cookies_text = None
+alt_cookies_text = None
 
 if os.getenv("USE_ENV_SETUP") == "true":
 
@@ -37,6 +38,8 @@ if os.getenv("USE_ENV_SETUP") == "true":
 
     cookies_text = login_info.get("cookies_text", None)
     login_info["cookies_text"] = None
+    alt_cookies_text = login_info.get("alt_cookies_text", None)
+    login_info["alt_cookies_text"] = None
 
     with open(f_login_info, "w") as f:
         json.dump(login_info, f)
@@ -69,8 +72,8 @@ if if_running_on_github_workflows:
         # Else using default one
         upload_file(GITHUB_TOKEN, GITHUB_REPO, f_intro_txt, STORAGE_BRANCE, f_intro_txt)
 
-username = login_info["username"]
-password = login_info["password"]
+username = login_info.get("username", None)
+password = login_info.get("password", None)
 otp_secret = login_info.get("otp_secret", "")
 alt_account = login_info.get("alt_account", "0")
 
@@ -97,7 +100,10 @@ except Exception as e:
     print(e)
 
 try:
-    if if_running_on_github_workflows:
+    if alt_cookies_text is not None:
+        with open(bakfilename, "w") as cookies_file:
+            json.dump(parse_cookies(alt_cookies_text), cookies_file)
+    elif if_running_on_github_workflows:
         # Download the encrypted file
         print(f"Đang khôi phục cookies từ branch: {STORAGE_BRANCE}")
         get_file(GITHUB_TOKEN, GITHUB_REPO, bakfilename + ".enc", STORAGE_BRANCE, bakfilename + ".enc")
@@ -117,24 +123,25 @@ if cookies == None:
     cookies = bakcookies
     bakcookies = None
 
-for i in range(5):
+if username:
+    for i in range(5):
+        if cookies == None:
+            print("Đang lấy cookies mới...")
+            cookies = get_fb_cookies(username, password, otp_secret, alt_account, incognito = True)
+        if cookies == None:
+            time.sleep(5)
+            continue
+        break
     if cookies == None:
-        print("Đang lấy cookies mới...")
-        cookies = get_fb_cookies(username, password, otp_secret, alt_account, incognito = True)
-    if cookies == None:
-        time.sleep(5)
-        continue
-    break
-if cookies == None:
-    raise Exception("Đăng nhập thất bại")
-for i in range(5):
-    if bakcookies == None:
-        print("Đang lấy cookies dự phòng mới...")
-        bakcookies = get_fb_cookies(username, password, otp_secret, alt_account, incognito = True)
-    if bakcookies == None:
-        time.sleep(5)
-        continue
-    break
+        raise Exception("Đăng nhập thất bại")
+    for i in range(5):
+        if bakcookies == None:
+            print("Đang lấy cookies dự phòng mới...")
+            bakcookies = get_fb_cookies(username, password, otp_secret, alt_account, incognito = True)
+        if bakcookies == None:
+            time.sleep(5)
+            continue
+        break
 
 
 with open(filename, "w") as cookies_file:
