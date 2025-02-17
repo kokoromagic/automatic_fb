@@ -236,6 +236,19 @@ def drop_image(driver, element, image_bytesio):
     driver.execute_script(js_script, base64_image, element)
 
 import re
+import json
+def extract_json_from_markdown(markdown_text):
+    """Extracts the first JSON code block from a markdown string."""
+    pattern = r'```json\n(.*?)\n```'
+    match = re.search(pattern, markdown_text, re.DOTALL)
+    
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {e}")
+    
+    return None
 
 def extract_image_keywords(text):
     pattern = r'\[image\](.*?)\[/image\]'

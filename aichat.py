@@ -55,7 +55,6 @@ rules_prompt = """
 - Make the chat engaging by asking interesting questions.
 - In group chats, you should only reply when necessary. To skip replying, just say only "/SKIP" without any message or words.
 - To send the images, add [image]keywords or image description[/image] into your message
-- No need to escape double quotes ("), single quotes ('), or new lines (\n) in your message—just type it naturally!
 - Provide only the response content without introductory phrases or multiple options.
 """
 
@@ -742,7 +741,7 @@ try:
                         
               
                     prompt_list.insert(0, header_prompt)
-                    prompt_list.append(">> TYPE YOUR MESSAGE TO REPLY")
+                    prompt_list.append(f'>> Provide JSON to answer, no markdown, example: \n```json\n{json.dumps({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : "YOUR MESSAGE HERE"}, "mentioned_message" : None })}\n```')
                     
                     caption = None
                     
@@ -771,6 +770,9 @@ try:
                                     caption = "(y)"
                                 else:
                                     caption = response.text
+                                    json_msg = extract_json_from_markdown(caption)
+                                    if json_msg:
+                                        caption = json_msg["info"]["msg"]
                             if caption is not None and not is_command_msg:
                                 reply_msg, img_keywords = extract_image_keywords(caption)
 
