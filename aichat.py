@@ -595,7 +595,7 @@ try:
                                     image_file = BytesIO(image_data)
                                     bytesio_to_file(image_file, image_name)
                                    
-                                    chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send image", "file_name" : image_name, "mime_type" : "image/jpeg" , "url" : _url }, "mentioned_message" : quotes_text})
+                                    chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send image", "file_name" : image_name, "mime_type" : "image/jpeg" , "url" : _url, "loaded" : True }, "mentioned_message" : quotes_text})
                                 except Exception:
                                     pass
                         except Exception:
@@ -612,7 +612,7 @@ try:
                             video_file = BytesIO(video_data)
                             bytesio_to_file(video_file, video_name)
 
-                            chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send video", "file_name" : video_name, "mime_type" : "video/mp4", "url" : None }, "mentioned_message" : quotes_text})
+                            chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send video", "file_name" : video_name, "mime_type" : "video/mp4", "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
                         except Exception:
                             pass
 
@@ -657,6 +657,9 @@ try:
 
                     command_result = ""
                     reset = False
+                    max_video = 10
+                    num_video = 0
+
                     def reset_chat(msg):
                         global reset
                         reset = True
@@ -708,13 +711,19 @@ try:
                     if len(chat_history) <= 0:
                         continue
                     last_msg = chat_history[-1]
+                    for msg in reversed(chat_history):
+                        if num_video >= 15:
+                            break
+                        if msg["message_type"] == "file" and msg["info"]["msg"] == "send video":
+                            msg["info"]["loaded"] = True
+                            num_video += 1
                     for msg in chat_history:
                         final_last_msg = msg
                         if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
                             final_last_msg = copy.deepcopy(msg)
                             final_last_msg["info"]["msg"] = "<This is command message. It has been hidden>"
                         prompt_list.append(json.dumps(final_last_msg, ensure_ascii=False))
-                        if msg["message_type"] == "file":
+                        if msg["message_type"] == "file" and msg["info"].get("loaded", False):
                             file_name = msg["info"]["file_name"]
                             mime_type = msg["info"]["mime_type"]
                             try:
@@ -794,7 +803,7 @@ try:
                                 button.send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
 
                             chat_history.append({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : caption}, "mentioned_message" : None })
-                            chat_histories[message_id] = chat_history
+                            chat_histories[message_id] = chat_history[-500:]
                             time.sleep(2)
                             break
                         except Exception as e:
