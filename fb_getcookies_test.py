@@ -114,9 +114,9 @@ except Exception as e:
     print(e)
 
 print("Kiểm tra cookies")
-cookies, old_cookies = check_cookies(filename, incognito = True)
+cookies, old_cookies = check_cookies(filename)
 print("Kiểm tra cookies dự phòng")
-bakcookies, old_bakcookies = check_cookies(bakfilename, incognito = True)
+bakcookies, old_bakcookies = check_cookies(bakfilename)
 
 if cookies == None:
     print("Cookies đã hết hạn sử dụng, sử dụng cookies dự phòng")

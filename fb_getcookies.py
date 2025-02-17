@@ -10,6 +10,7 @@ import os
 import json
 import random
 from urllib.parse import urlparse
+from fbparser import get_facebook_profile_url
 
 cwd = os.getcwd()
 
@@ -98,51 +99,28 @@ def is_facebook_logged_out(cookies):
             return False  # User is logged in if "c_user" cookie is present
     return True  # User is logged out if "c_user" cookie is not found
 
-def check_cookies_(cookies, incognito = False):
+def check_cookies_(cookies):
     if cookies == None:
         return None
     try:
-        scoped_dir = os.getenv("SCPDIR")
-        driver = __chrome_driver__(scoped_dir, False, incognito)
-
-        driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": True})
-        driver.get("https://www.facebook.com")
-        driver.delete_all_cookies()
-        for cookie in cookies:
-            cookie.pop('expiry', None)  # Remove 'expiry' field if it exists
-            driver.add_cookie(cookie)
-        print("Đã khôi phục cookies")
-        driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})
-        
-        driver.get("https://facebook.com/profile.php")
-        
-        wait = WebDriverWait(driver, 20)
-
-        wait.until(
-            lambda d: d.execute_script("return document.readyState") == "complete"
-        )
-        time.sleep(3)
-        cookies = driver.get_cookies()
-        _url = base_url_with_path(driver.current_url)
+        current_url = get_facebook_profile_url(cookies)
+        _url = base_url_with_path(current_url)
         if _url == "www.facebook.com" or _url == "www.facebook.com/login" or _url.startswith("www.facebook.com/checkpoint/"):
-            driver.delete_all_cookies()
             return None
-        print("Đăng nhập thành công:", driver.current_url)
+        print("Đăng nhập thành công:", _url)
     except Exception as e:
         print(f"Error: {e}")
         return None
-    finally:
-        driver.quit()
     return cookies
 
 
-def check_cookies(filename=None, incognito = False):
+def check_cookies(filename=None):
     try:
         cookies = None
         if filename:
             with open(filename, "r") as f:
                 cookies = json.load(f)
-        return check_cookies_(cookies, incognito), cookies
+        return check_cookies_(cookies), cookies
     except Exception as e:
         print(f"Error loading cookies from file: {e}")
         return None, cookies
