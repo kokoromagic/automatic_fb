@@ -267,3 +267,30 @@ def get_random_image_link(keyword, get = 10):
             "*.adobestock.com"
         ], verbose=False).get_image_links()
     return random.choice(img_links)
+
+import mimetypes
+import os
+
+def check_supported_file(mime_type):
+    # List of supported MIME types for Google Vertex AI
+    supported_mime_types = [
+        "text/plain", "text/html", "application/json",  # Text files
+        "image/jpeg", "image/png", "image/gif", "image/webp",  # Image files
+        "audio/mpeg", "audio/wav", "audio/ogg",  # Audio files
+        "video/mp4", "video/webm",  # Video files
+        "application/pdf",  # PDF files
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # Word (DOCX)
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # Excel (XLSX)
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"  # PowerPoint (PPTX)
+    ]
+    
+    # Check if the MIME type is in the supported list
+    return mime_type in supported_mime_types
+
+def get_mine_type(filename):
+    # Extract the file extension
+    ext = os.path.splitext(filename)[1]
+    # Guess the MIME type of the file based on its extension
+    mime_type, _ = mimetypes.guess_type(filename)
+    # Return the extension and MIME type
+    return ext, mime_type if mime_type else "application/octet-stream"

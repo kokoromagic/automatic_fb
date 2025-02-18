@@ -514,6 +514,8 @@ try:
                     should_not_chat = chat_histories["status"].get(message_id, True) == False
                     max_video = 10
                     num_video = 0
+                    max_file = 10
+                    num_file = 0
 
                     for _x in range(3):
                         stop = False
@@ -626,13 +628,31 @@ try:
                             video_url = video_element.get_attribute("src")
                             video_data = get_file_data(driver, video_url)
                             video_hashcode = md5(video_data).hexdigest()
-                            video_name = f"files/video-{message_id}-{video_hashcode}"
+                            video_name = f"files/{video_hashcode}"
                             video_name = video_name[:40]
                             os.makedirs(os.path.dirname(video_name), exist_ok=True)
                             video_file = BytesIO(video_data)
                             bytesio_to_file(video_file, video_name)
 
                             chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send video", "file_name" : video_name, "mime_type" : "video/mp4", "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
+                        except Exception:
+                            pass
+
+                        try:
+                            file_element = msg_element.find_element(By.CSS_SELECTOR, 'a[download]')
+                            file_url = file_element.get_attribute("href")
+                            file_down_name = file_element.get_attribute("download")
+                            file_ext, mime_type = get_mine_type(file_down_name)
+                            if check_supported_file(mime_type):
+                                file_data = get_file_data(driver, file_url)
+                                file_hashcode = md5(file_data).hexdigest()
+                                file_name = f"files/{file_hashcode}"
+                                file_name = file_name[:40]
+                                
+                                os.makedirs(os.path.dirname(file_name), exist_ok=True)
+                                file_file = BytesIO(file_data)
+                                bytesio_to_file(file_file, file_name)
+                                chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send file", "file_name" : file_name, "mime_type" : mime_type, "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
                         except Exception:
                             pass
 
@@ -727,11 +747,15 @@ try:
                         continue
                     last_msg = chat_history[-1]
                     for msg in reversed(chat_history):
-                        if num_video >= 15:
+                        if num_video >= max_video and num_file >= max_file:
                             break
-                        if msg["message_type"] == "file" and msg["info"]["msg"] == "send video":
-                            msg["info"]["loaded"] = True
-                            num_video += 1
+                        if msg["message_type"] == "file":
+                            if num_video < max_video and msg["info"]["msg"] == "send video":
+                                msg["info"]["loaded"] = True
+                                num_video += 1
+                            if num_file < max_file and msg["info"]["msg"] == "send file":
+                                msg["info"]["loaded"] = True
+                                num_file += 1
                     for msg in chat_history:
                         final_last_msg = msg
                         if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
