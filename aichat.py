@@ -24,6 +24,15 @@ from fbparser import get_facebook_id
 from fb_getcookies import __chrome_driver__, is_facebook_logged_out, base_url_with_path  # For Facebook cookie handling
 from aichat_utils import *  # For custom utility functions
 
+def get_day_and_time():
+    # Get current date and time
+    current_datetime = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
+    # Format the output
+    return current_datetime.strftime("%A, %d %B %Y - %H:%M:%S")
+
+def print_with_time(*args, sep=" ", end="\n", file=None, flush=False): 
+    print(get_day_and_time(), ":", *args, sep=sep, end=end, file=file, flush=flush)
+
 sys.stdout.reconfigure(encoding='utf-8')
 
 genai_key = os.getenv("GENKEY")
@@ -60,7 +69,7 @@ rules_prompt = """
 """
 
 cwd = os.getcwd()
-print(cwd)
+print_with_time(cwd)
 
 try:
     # Initialize the driver
@@ -89,7 +98,7 @@ try:
     
     wait = WebDriverWait(driver, 10)
     
-    print("Đang tải dữ liệu từ cookies")
+    print_with_time("Đang tải dữ liệu từ cookies")
     
     try:
         with open("cookies.json", "r") as f:
@@ -110,9 +119,9 @@ try:
     except Exception as e:
         onetimecode = ""
         work_jobs = parse_opts_string("aichat,friends")
-        print(e)
+        print_with_time(e)
 
-    print("Danh sách jobs:", work_jobs)
+    print_with_time("Danh sách jobs:", work_jobs)
 
     driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": True})
     driver.get("https://www.facebook.com")
@@ -120,11 +129,11 @@ try:
     for cookie in cache_fb:
         cookie.pop('expiry', None)  # Remove 'expiry' field if it exists
         driver.add_cookie(cookie)
-    print("Đã khôi phục cookies")
+    print_with_time("Đã khôi phục cookies")
     driver.execute_cdp_cmd("Emulation.setScriptExecutionDisabled", {"value": False})
-    #print("Vui lòng xác nhận đăng nhập, sau đó nhấn Enter ở đây...")
+    #print_with_time("Vui lòng xác nhận đăng nhập, sau đó nhấn Enter ở đây...")
     #input()
-    print("Đang đọc thông tin cá nhân...")
+    print_with_time("Đang đọc thông tin cá nhân...")
     driver.get("https://www.facebook.com/profile.php")
     wait_for_load(driver)
     
@@ -137,13 +146,13 @@ try:
         try:
             get_file(GITHUB_TOKEN, GITHUB_REPO, f_self_facebook_info, STORAGE_BRANCE, f_self_facebook_info)
         except Exception as e:
-            print(e)
+            print_with_time(e)
         try:
             # Get chat_histories
             get_file(GITHUB_TOKEN, GITHUB_REPO, f_chat_history + ".enc", STORAGE_BRANCE, f_chat_history + ".enc")
             decrypt_file(f_chat_history + ".enc", f_chat_history, encrypt_key)
         except Exception as e:
-            print(e)
+            print_with_time(e)
 
     chat_histories = pickle_from_file(f_chat_history, {})
     if chat_histories.get("status", None) is None:
@@ -159,7 +168,7 @@ try:
             "?sk=about_details"
         ]
     self_fbid = get_facebook_id(driver.current_url)
-    print(f"ID là {self_fbid}")
+    print_with_time(f"ID là {self_fbid}")
     if self_facebook_info.get("Last access", 0) == 0:
         self_facebook_info["Last access"] = int(time.time())
         # Loop through the profile sections
@@ -206,7 +215,7 @@ try:
     )
 
     for text in instruction:
-        print(text)
+        print_with_time(text)
     
     def init_fb():
         driver.switch_to.window(chat_tab)
@@ -221,16 +230,16 @@ try:
         if if_running_on_github_workflows:
             get_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE, f_facebook_infos)
     except Exception as e:
-        print(e)
+        print_with_time(e)
     facebook_infos = pickle_from_file(f_facebook_infos, {})
 
-    print("Bắt đầu khởi động!")
+    print_with_time("Bắt đầu khởi động!")
 
     while True:
         try:
             if is_facebook_logged_out(driver.get_cookies()):
                 if bak_cache_fb is not None:
-                    print("Tài khoản bị đăng xuất, sử dụng cookies dự phòng")
+                    print_with_time("Tài khoản bị đăng xuất, sử dụng cookies dự phòng")
                     # TODO: obtain new cookies
                     driver.delete_all_cookies()
                     for cookie in bak_cache_fb:
@@ -241,7 +250,7 @@ try:
                     time.sleep(1)
                     continue
                 else:
-                    print("Tài khoản bị đăng xuất")
+                    print_with_time("Tài khoản bị đăng xuất")
                     break
             with open("exitnow.txt", "r") as file:
                 content = file.read().strip()  # Read and strip any whitespace/newline
@@ -260,14 +269,14 @@ try:
 
                 try:
                     for button in driver.find_elements(By.CSS_SELECTOR, 'div[aria-label="Xác nhận"]'):
-                        print("Chấp nhận kết bạn")
+                        print_with_time("Chấp nhận kết bạn")
                         driver.execute_script("arguments[0].click();", button)
                         time.sleep(1)
                 except Exception:
                     pass
                 try:
                     for button in driver.find_elements(By.CSS_SELECTOR, 'div[aria-label="Xóa"]'):
-                        print("Xóa kết bạn")
+                        print_with_time("Xóa kết bạn")
                         driver.execute_script("arguments[0].click();", button)
                         time.sleep(1)
                 except Exception:
@@ -319,13 +328,13 @@ try:
                     if len(onetimecode) >= 6:
                         otc_input = driver.find_element(By.CSS_SELECTOR, 'input[autocomplete="one-time-code"]')
                         driver.execute_script("arguments[0].setAttribute('class', '');", otc_input)
-                        print("Giải mã đoạn chat được mã hóa...")
+                        print_with_time("Giải mã đoạn chat được mã hóa...")
                         actions.move_to_element(otc_input).click().perform()
                         time.sleep(2)
                         for digit in onetimecode:
                             actions.move_to_element(otc_input).send_keys(digit).perform()  # Send the digit to the input element
                             time.sleep(1)  # Wait for 1s before sending the next digit
-                        print("Hoàn tất giải mã!")
+                        print_with_time("Hoàn tất giải mã!")
                         time.sleep(5)
                         continue
                     else:
@@ -339,7 +348,7 @@ try:
                 chat_btns = driver.find_elements(By.CSS_SELECTOR, 'a[href^="/messages/"]')
                 chat_list = []
                 for chat_btn in chat_btns:
-                    #print(chat_btn.text)
+                    #print_with_time(chat_btn.text)
                     try:
                         chat_btn.find_element(By.CSS_SELECTOR, 'span[class="x6s0dn4 xzolkzo x12go9s9 x1rnf11y xprq8jg x9f619 x3nfvp2 xl56j7k x1spa7qu x1kpxq89 xsmyaan"]')
                         chat_name = chat_btn.find_element(By.CSS_SELECTOR, 'span[class="x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft"]').text
@@ -358,7 +367,7 @@ try:
                             EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
                         )
                     except Exception as e:
-                        print(e)
+                        print_with_time(e)
 
                     try:
                         button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
@@ -387,7 +396,7 @@ try:
                             if facebook_info == None:
                                 driver.switch_to.window(profile_tab)
                                 driver.get(profile_link)
-                                print(f"Đang lấy thông tin cá nhân từ {profile_link}")
+                                print_with_time(f"Đang lấy thông tin cá nhân từ {profile_link}")
                                 
                                 wait_for_load(driver)
                                 time.sleep(0.5)
@@ -430,7 +439,7 @@ try:
                             last_access_ts = facebook_info.get("Last access", 0)
                             facebook_info["Last access"] = int(time.time())
                             if pickle_to_file(f_facebook_infos, facebook_infos) == False:
-                                print(f"Không thể sao lưu vào {f_facebook_infos}")
+                                print_with_time(f"Không thể sao lưu vào {f_facebook_infos}")
                             # First time upload
                             if last_access_ts == 0 and (if_running_on_github_workflows):
                                 upload_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE)
@@ -439,12 +448,12 @@ try:
                             who_chatted = chat_info["name"]
                             facebook_info = { "Facebook group name" : who_chatted }
                     except Exception as e:
-                        print(e)
+                        print_with_time(e)
                         continue
 
                     driver.switch_to.window(chat_tab)
-                    print("Tin nhắn mới từ " + who_chatted)
-                    print(json.dumps(facebook_info, ensure_ascii=False, indent=2))
+                    print_with_time("Tin nhắn mới từ " + who_chatted)
+                    print_with_time(json.dumps(facebook_info, ensure_ascii=False, indent=2))
                     try:
                         button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
                         driver.execute_script("arguments[0].click();", button)
@@ -468,7 +477,7 @@ try:
                             EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
                         )
                     except Exception as e:
-                        print(e)
+                        print_with_time(e)
                     try:
                         msg_table = main.find_element(By.CSS_SELECTOR, 'div[role="grid"]')
                     except Exception:
@@ -484,20 +493,16 @@ try:
 
                     time.sleep(1)
 
-                    # Get current date and time
-                    current_datetime = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
 
-                    # Format the output
-                    day_and_time = current_datetime.strftime("%A, %d %B %Y - %H:%M:%S")
                     
                     prompt_list = []
                         
                     chat_history = chat_histories.get(message_id, [])
                     if "debug" in work_jobs:
-                        print(json.dumps(chat_history, indent=4, ensure_ascii=False))
+                        print_with_time(json.dumps(chat_history, indent=4, ensure_ascii=False))
                     chat_history_new = []
 
-                    header_prompt = get_header_prompt(day_and_time, who_chatted, facebook_info)
+                    header_prompt = get_header_prompt(get_day_and_time(), who_chatted, facebook_info)
 
                     prompt_list.append(f'The Messenger conversation with "{who_chatted}" is as json here:')
                     try:
@@ -507,7 +512,7 @@ try:
                     except Exception:
                         pass
 
-                    print("Đang đọc tin nhắn...")
+                    print_with_time("Đang đọc tin nhắn...")
 
                     command_result = ""
                     reset = False
@@ -693,7 +698,7 @@ try:
                         except Exception:
                             pass
 
-                    print("Đã đọc xong!")
+                    print_with_time("Đã đọc xong!")
 
                     def reset_chat(msg):
                         global reset
@@ -773,15 +778,15 @@ try:
                                         get_raw_file(msg["info"]["url"], msg["info"]["file_name"])
                                     file_upload = genai.upload_file(path = file_name, mime_type = mime_type, name = file_name)
                                 except Exception as e:
-                                    print(e)
+                                    print_with_time(e)
                                     continue
                             prompt_list.append(file_upload)
 
                     if "debug" in work_jobs:
                         for prompt in prompt_list:
-                            print(prompt)
+                            print_with_time(prompt)
                     else:
-                        print(f"<{len(chat_history)} tin nhắn từ {who_chatted}>")
+                        print_with_time(f"<{len(chat_history)} tin nhắn từ {who_chatted}>")
 
                     if last_msg["message_type"] == "your_text_message":
                         continue
@@ -825,7 +830,7 @@ try:
                             if caption is not None and not is_command_msg:
                                 reply_msg, img_keywords = extract_image_keywords(caption)
 
-                                print("AI Trả lời:", caption)
+                                print_with_time("AI Trả lời:", caption)
                                 if caption.strip() == "/SKIP":
                                     break
                                 for img_keyword in img_keywords:
@@ -836,11 +841,11 @@ try:
                                                 image_io = download_image_to_bytesio(image_link)
                                             except:
                                                 continue
-                                            print(f"AI gửi ảnh {img_keyword} từ: {image_link}")
+                                            print_with_time(f"AI gửi ảnh {img_keyword} từ: {image_link}")
                                             drop_image(driver, button, image_io)
                                             break
                                     except:
-                                        print(f"Không thể gửi ảnh: {img_keyword}")
+                                        print_with_time(f"Không thể gửi ảnh: {img_keyword}")
                                 button.send_keys(Keys.CONTROL + "a")  # Select all text
                                 button.send_keys(Keys.DELETE)  # Delete the selected text
                                 time.sleep(0.5)
@@ -853,12 +858,12 @@ try:
                         except Exception as e:
                             if len(driver.find_elements(By.CSS_SELECTOR, 'div.x1n2onr6.x1ja2u2z.x9f619.x78zum5.xdt5ytf.x2lah0s.x193iq5w.xyamay9.xkh2ocl.x57kliw.x1epquy7.x13fuv20.x178xt8z.x1l90r2v')):
                                 break
-                            print("Thử lại:", _x + 1)
-                            print(e)
+                            print_with_time("Thử lại:", _x + 1)
+                            print_with_time(e)
                             time.sleep(2)
                             continue
         except Exception as e:
-            print(e)
+            print_with_time(e)
 
     if if_running_on_github_workflows:
         upload_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE)
