@@ -350,11 +350,14 @@ try:
                 for chat_btn in chat_btns:
                     #print_with_time(chat_btn.text)
                     try:
-                        chat_btn.find_element(By.CSS_SELECTOR, 'span[class="x6s0dn4 xzolkzo x12go9s9 x1rnf11y xprq8jg x9f619 x3nfvp2 xl56j7k x1spa7qu x1kpxq89 xsmyaan"]')
-                        chat_name = chat_btn.find_element(By.CSS_SELECTOR, 'span[class="x1lliihq x6ikm8r x10wlt62 x1n2onr6 xlyipyv xuxw1ft"]').text
+                        chat_btn.find_element(By.CSS_SELECTOR, 'div[role="button"]')
+                        chat_name = chat_btn.find_element(By.CSS_SELECTOR, 'span.x1lliihq.x6ikm8r.x10wlt62.x1n2onr6.xlyipyv.xuxw1ft').text
                         chat_list.append({ "obj" : chat_btn, "name" : chat_name })
                     except Exception:
                         continue
+
+                def get_message_input():
+                    return driver.find_element(By.CSS_SELECTOR, 'p.xat24cr.xdj266r')
 
                 for chat_info in chat_list:
                     is_group_chat = False
@@ -370,9 +373,9 @@ try:
                         print_with_time(e)
 
                     try:
-                        button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
+                        button = get_message_input()
                         driver.execute_script("arguments[0].click();", button)
-                        button.send_keys(" ")
+                        get_message_input().send_keys(" ")
                     except Exception:
                         pass
                     
@@ -455,9 +458,9 @@ try:
                     print_with_time("Tin nhắn mới từ " + who_chatted)
                     print_with_time(json.dumps(facebook_info, ensure_ascii=False, indent=2))
                     try:
-                        button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
+                        button = get_message_input()
                         driver.execute_script("arguments[0].click();", button)
-                        button.send_keys(" ")
+                        get_message_input().send_keys(" ")
                     except Exception:
                         pass
 
@@ -506,9 +509,9 @@ try:
 
                     prompt_list.append(f'The Messenger conversation with "{who_chatted}" is as json here:')
                     try:
-                        button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
+                        button = get_message_input()
                         driver.execute_script("arguments[0].click();", button)
-                        button.send_keys(" ")
+                        get_message_input().send_keys(" ")
                     except Exception:
                         pass
 
@@ -801,12 +804,12 @@ try:
                     
                     if command_result:
                         try:
-                            button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
+                            button = get_message_input()
                             driver.execute_script("arguments[0].click();", button)
-                            button.send_keys(Keys.CONTROL + "a")  # Select all text
-                            button.send_keys(Keys.DELETE)  # Delete the selected text
+                            get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
+                            get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
                             time.sleep(0.5)
-                            button.send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(command_result) + "\n"))
+                            get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(command_result) + "\n"))
                         except:
                             pass
                     for _x in range(10):
@@ -815,9 +818,9 @@ try:
                         if should_not_chat:
                             break
                         try:
-                            button = driver.find_element(By.CSS_SELECTOR, 'p[class="xat24cr xdj266r"]')
+                            button = get_message_input()
                             driver.execute_script("arguments[0].click();", button)
-                            button.send_keys(" ")
+                            get_message_input().send_keys(" ")
                             if caption is None and not is_command_msg:
                                 response = model.generate_content(prompt_list)
                                 if not response.candidates:
@@ -846,10 +849,10 @@ try:
                                             break
                                     except:
                                         print_with_time(f"Không thể gửi ảnh: {img_keyword}")
-                                button.send_keys(Keys.CONTROL + "a")  # Select all text
-                                button.send_keys(Keys.DELETE)  # Delete the selected text
+                                get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
+                                get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
                                 time.sleep(0.5)
-                                button.send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
+                                get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
 
                             chat_history.append({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : caption}, "mentioned_message" : None })
                             chat_histories[message_id] = chat_history[-500:]
