@@ -841,6 +841,8 @@ try:
         if os.path.exists("files"):
             branch = upload_file(GITHUB_TOKEN, GITHUB_REPO, "files", generate_hidden_branch())
             for msg_id, chat_history in chat_histories.items():
+                if msg_id == "status":
+                    continue
                 for msg in chat_history:
                     if msg["message_type"] == "file" and msg["info"]["url"] == None:
                         # Update url of file
