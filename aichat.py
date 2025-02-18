@@ -234,6 +234,7 @@ try:
     facebook_infos = pickle_from_file(f_facebook_infos, {})
 
     print_with_time("Bắt đầu khởi động!")
+    last_reload_ts = int(time.time())
 
     while True:
         try:
@@ -321,9 +322,9 @@ try:
 
             if "aichat" in work_jobs:
                 driver.switch_to.window(chat_tab)
-                if base_url_with_path(driver.current_url) != "www.facebook.com/messages/new":
+                if base_url_with_path(driver.current_url) != "www.facebook.com/messages/new" or (int(time.time()) - last_reload_ts) > 60:
                     driver.get("https://www.facebook.com/messages/new")
-                inject_reload(driver)
+                    last_reload_ts = int(time.time())
                 try:
                     if len(onetimecode) >= 6:
                         otc_input = driver.find_element(By.CSS_SELECTOR, 'input[autocomplete="one-time-code"]')
