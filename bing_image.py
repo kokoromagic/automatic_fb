@@ -1,14 +1,16 @@
 import urllib.request
 import urllib.parse
 import re
+import fnmatch
 
 class Bing:
-    def __init__(self, query, limit, adult="off", timeout=60, filter='', verbose=False):
+    def __init__(self, query, limit, adult="off", timeout=60, filter='', excludeSites=[], verbose=False):
         self.query = query
         self.adult = adult
         self.filter = filter
         self.verbose = verbose
         self.seen = set()
+        self.excludeSites = excludeSites
 
         assert type(limit) == int, "limit must be integer"
         self.limit = limit
@@ -62,6 +64,11 @@ class Bing:
                 print("\n===============================================\n")
 
             for link in links:
+                parsed_url = urllib.parse.urlparse(link)
+                domain = parsed_url.netloc.lower()
+
+                if any(fnmatch.fnmatch(domain, pattern) for pattern in self.excludeSites):
+                    continue  # Bỏ qua link này
                 if len(image_links) < self.limit and link not in self.seen:
                     self.seen.add(link)
                     image_links.append(link)

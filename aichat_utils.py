@@ -260,5 +260,10 @@ from bing_image import Bing
 import random
 
 def get_random_image_link(keyword, get = 10):
-    img_links = Bing(keyword, get, "off", 60, "", False).get_image_links()
+    img_links = Bing(keyword, get, "off", timeout=60, filter="", excludeSites=[
+            "*.vectorstock.com", "*.shutterstock.com", "*.gettyimages.com",
+            "*.istockphoto.com", "*.dreamstime.com", "*.123rf.com",
+            "*.depositphotos.com", "*.alamy.com", "*.bigstockphoto.com",
+            "*.adobestock.com"
+        ], verbose=False).get_image_links()
     return random.choice(img_links)
