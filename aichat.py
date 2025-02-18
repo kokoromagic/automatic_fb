@@ -55,7 +55,7 @@ rules_prompt = """
 - Feel free to introduce yourself when meeting someone new.
 - Make the chat engaging by asking interesting questions.
 - In group chats, you should only reply when necessary. To skip replying, just say only "/SKIP" without any message or words.
-- To send the images, add [image]keywords or image description[/image] into your message
+- To send the images, add [image]keywords or image description[/image] into your message (Maximum 4 images).
 - Provide only the response content without introductory phrases or multiple options.
 """
 
