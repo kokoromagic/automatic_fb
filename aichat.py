@@ -462,7 +462,13 @@ try:
                     message_id = path_parts[-1] if len(path_parts) > 1 else "0"
 
                     time.sleep(1)
-
+                    # Wait until box is visible
+                    try:
+                        main = WebDriverWait(driver, 15).until(
+                            EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
+                        )
+                    except Exception as e:
+                        print(e)
                     try:
                         msg_table = main.find_element(By.CSS_SELECTOR, 'div[role="grid"]')
                     except Exception:
