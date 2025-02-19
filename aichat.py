@@ -17,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait  # For waiting for eleme
 from selenium.webdriver.support import expected_conditions as EC  # For expected conditions
 from selenium.common.exceptions import *  # For handling exceptions
 from selenium.webdriver.common.keys import Keys  # For keyboard actions
+from selenium.common.exceptions import *
 import google.generativeai as genai  # For generative AI functionalities
 from pickle_utils import *  # For pickling data
 from github_utils import *  # For GitHub file operations
@@ -351,7 +352,7 @@ try:
                 for chat_btn in chat_btns:
                     #print_with_time(chat_btn.text)
                     try:
-                        chat_btn.find_element(By.CSS_SELECTOR, 'div[role="button"]')
+                        chat_btn.find_element(By.CSS_SELECTOR, 'span.x6s0dn4.xzolkzo.x12go9s9.x1rnf11y.xprq8jg.x9f619.x3nfvp2.xl56j7k.x1spa7qu.x1kpxq89.xsmyaan')
                         chat_name = chat_btn.find_element(By.CSS_SELECTOR, 'span.x1lliihq.x6ikm8r.x10wlt62.x1n2onr6.xlyipyv.xuxw1ft').text
                         chat_list.append({ "obj" : chat_btn, "name" : chat_name })
                     except Exception:
@@ -361,511 +362,522 @@ try:
                     return driver.find_element(By.CSS_SELECTOR, 'p.xat24cr.xdj266r')
 
                 for chat_info in chat_list:
-                    is_group_chat = False
-                    chat_btn = chat_info["obj"]
-                    driver.execute_script("arguments[0].click();", chat_btn)
-                    time.sleep(1)
-                    # Wait until box is visible
-                    try:
-                        main = WebDriverWait(driver, 15).until(
-                            EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
-                        )
-                    except Exception as e:
-                        print_with_time(e)
-
-                    try:
-                        button = get_message_input()
-                        driver.execute_script("arguments[0].click();", button)
-                        get_message_input().send_keys(" ")
-                    except Exception:
-                        pass
-                    
-                    try:
-                        profile_btn = driver.find_elements(By.CSS_SELECTOR, 'a[class="x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1rg5ohu x1a2a7pz xs83m0k"]')
-                        facebook_info = None
-                        if len(profile_btn) > 0:
-                            profile_btn = profile_btn[0]
-                            profile_link = urljoin(driver.current_url, profile_btn.get_attribute("href"))
-
-                            facebook_info = facebook_infos.get(profile_link)
-                            if facebook_info != None:
-                                last_access_ts = facebook_info.get("Last access", 0)
-                                
-                                # Get the current time Unix timestamp minus 3 days (3 days = 3 * 24 * 60 * 60 seconds)
-                                three_days_ago = int(time.time()) - 3 * 24 * 60 * 60
-                                
-                                if last_access_ts < three_days_ago:
-                                    facebook_info = None
-
-                            if facebook_info == None:
-                                driver.switch_to.window(profile_tab)
-                                driver.get(profile_link)
-                                print_with_time(f"Đang lấy thông tin cá nhân từ {profile_link}")
-                                
-                                wait_for_load(driver)
-                                time.sleep(0.5)
-                
-                                find_who_chatted = driver.find_elements(By.CSS_SELECTOR, 'h1[class^="html-h1 "]')
-                                who_chatted = find_who_chatted[-1].text
-                                
-                                facebook_info = { "Facebook name" : who_chatted, "Facebook url" :  profile_link, "Last access" : int(time.time()) }
-                                
-                                # Loop through the profile sections
-                                for sk in sk_list:
-                                    # Build the full URL for the profile section
-                                    info_url = urljoin(profile_link, sk)
-                                    driver.get(info_url)
-
-                                    # Wait for the page to load
-                                    wait_for_load(driver)
-                                    #time.sleep(0.5)
-
-                                    # Find the info elements
-                                    info_elements = driver.find_elements(By.CSS_SELECTOR, 'div[class="xyamay9 xqmdsaz x1gan7if x1swvt13"] > div')
-
-                                    # Loop through each info element
-                                    for info_element in info_elements:
-                                        title = find_and_get_text(info_element, By.CSS_SELECTOR, 'div[class="xieb3on x1gslohp"]')
-                                        if title is not None:
-                                            detail = []
-
-                                            # Append the text lists to the detail array
-                                            detail.extend(find_and_get_list_text(info_element, By.CSS_SELECTOR, 'div[class="x1hq5gj4"]'))
-                                            detail.extend(find_and_get_list_text(info_element, By.CSS_SELECTOR, 'div[class="xat24cr"]'))
-
-                                            # Add title and details to the facebook_info dictionary
-                                            facebook_info[title] = detail
-                                
-                                facebook_infos[profile_link] = facebook_info
-                            else:
-                                who_chatted = facebook_info.get("Facebook name")
-
-                            last_access_ts = facebook_info.get("Last access", 0)
-                            facebook_info["Last access"] = int(time.time())
-                            if pickle_to_file(f_facebook_infos, facebook_infos) == False:
-                                print_with_time(f"Không thể sao lưu vào {f_facebook_infos}")
-                            # First time upload
-                            if last_access_ts == 0 and (if_running_on_github_workflows):
-                                upload_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE)
-                        else:
-                            is_group_chat = True
-                            who_chatted = chat_info["name"]
-                            facebook_info = { "Facebook group name" : who_chatted }
-                    except Exception as e:
-                        print_with_time(e)
-                        continue
-
-                    driver.switch_to.window(chat_tab)
-                    print_with_time("Tin nhắn mới từ " + who_chatted)
-                    print_with_time(json.dumps(facebook_info, ensure_ascii=False, indent=2))
-                    try:
-                        button = get_message_input()
-                        driver.execute_script("arguments[0].click();", button)
-                        get_message_input().send_keys(" ")
-                    except Exception:
-                        pass
-
-                    parsed_url = urlparse(driver.current_url)
-
-                    # Remove the trailing slash from the path, if it exists
-                    urlpath = parsed_url.path.rstrip("/")
-                    
-                    # Split the path and extract the ID
-                    path_parts = urlpath.split("/")
-                    message_id = path_parts[-1] if len(path_parts) > 1 else "0"
-
-                    time.sleep(1)
-                    # Wait until box is visible
-                    try:
-                        main = WebDriverWait(driver, 15).until(
-                            EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
-                        )
-                    except Exception as e:
-                        print_with_time(e)
-                    try:
-                        msg_table = main.find_element(By.CSS_SELECTOR, 'div[role="grid"]')
-                    except Exception:
-                        continue
-                    try:
-                        msg_scroller = msg_table.find_element(By.CSS_SELECTOR, 'div[role="none"]')
-                        #for _x in range(30):
-                        #    # Scroll to the top of the message scroller
-                        #    driver.execute_script("arguments[0].scrollTop = 0;", msg_scroller)
-                        #    time.sleep(0.1)
-                    except Exception:
-                        msg_scroller = None
-
-                    time.sleep(1)
-
-
-                    
-                    prompt_list = []
+                    if True:
+                        is_group_chat = False
+                        chat_btn = chat_info["obj"]
+                        driver.execute_script("arguments[0].click();", chat_btn)
+                        time.sleep(1)
                         
-                    chat_history = chat_histories.get(message_id, [])
-                    if "debug" in work_jobs:
-                        print_with_time(json.dumps(chat_history, indent=4, ensure_ascii=False))
-                    chat_history_new = []
-
-                    header_prompt = get_header_prompt(get_day_and_time(), who_chatted, facebook_info)
-
-                    prompt_list.append(f'The Messenger conversation with "{who_chatted}" is as json here:')
-                    try:
-                        button = get_message_input()
-                        driver.execute_script("arguments[0].click();", button)
-                        get_message_input().send_keys(" ")
-                    except Exception:
-                        pass
-
-                    print_with_time("Đang đọc tin nhắn...")
-
-                    command_result = ""
-                    reset = False
-                    should_not_chat = chat_histories["status"].get(message_id, True) == False
-                    max_video = 10
-                    num_video = 0
-                    max_file = 10
-                    num_file = 0
-
-                    for _x in range(3):
-                        stop = False
-                        for msg_element in reversed(msg_table.find_elements(By.CSS_SELECTOR, 'div[role="row"]:not([__read])')):
-                            try: 
-                                msg_element.find_element(By.CSS_SELECTOR, 'div[class="html-div xexx8yu x4uap5 x18d9i69 xkhd6sd x1gslohp x11i5rnm x12nagc x1mh8g0r x1yc453h x126k92a xyk4ms5"]').text
-                                # our msg, at this point we should shop reading if we cached previous one
-                                if len(chat_history) > 0:
-                                    stop = True
-                            except:
-                                pass
-                            driver.execute_script('arguments[0].setAttribute("__read", "yes");', msg_element)
-                        if stop:
-                            break
-                        driver.execute_script("""
-                                var divs = document.querySelectorAll('div.x78zum5.xdt5ytf[data-virtualized="false"], div.x78zum5.xdt5ytf[data-virtualized="true"]');
-                                divs.forEach(function(div) {
-                                    var disabledDiv = document.createElement('disabled-div');
-                                    disabledDiv.innerHTML = div.innerHTML;  // Keep the content inside
-                                    div.parentNode.replaceChild(disabledDiv, div);  // Replace the div with the custom tag
-                                });
-                            """)
-                        driver.execute_script("arguments[0].scrollTop = 0;", msg_scroller)
-                        time.sleep(0.1)
-
-                    for msg_element in reversed(msg_table.find_elements(By.CSS_SELECTOR, 'div[role="row"]')):
+                        # Wait until box is visible
                         try:
-                            timedate = msg_element.find_element(By.CSS_SELECTOR, 'span[class="x193iq5w xeuugli x13faqbe x1vvkbs x1xmvt09 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x4zkp8e x676frb x1pg5gke xvq8zen xo1l8bm x12scifz"]')
-                            chat_history_new.insert(0, {"message_type" : "conversation_event", "info" : timedate.text})
-                        except Exception:
-                            pass
+                            main = WebDriverWait(driver, 15).until(
+                                EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
+                            )
+                        except Exception as e:
+                            print_with_time(e)
 
-                        try:
-                            quotes_text = msg_element.find_element(By.CSS_SELECTOR, 'div[class="xi81zsa x126k92a"]').text
-                        except Exception:
-                            quotes_text = None
-
-                        # Finding name
-                        stop = False
-                        try: 
-                            msg_element.find_element(By.CSS_SELECTOR, 'div[class="html-div xexx8yu x4uap5 x18d9i69 xkhd6sd x1gslohp x11i5rnm x12nagc x1mh8g0r x1yc453h x126k92a xyk4ms5"]').text
-                            if len(chat_history) > 0:
-                                break
-                            name = myname
-                            mark = "your_text_message"
-                        except Exception:
-                            name = None
-                            mark = "text_message"
-
-                        if name == None:
-                            try: 
-                                name = msg_element.find_element(By.CSS_SELECTOR, 'img[class="x1rg5ohu x5yr21d xl1xv1r xh8yej3"]').get_attribute("alt")
-                                name =  f"{who_chatted} ({name})"
-                            except Exception:
-                                name = None
-
-                        if name == None:
-                            try: 
-                                name = msg_element.find_element(By.CSS_SELECTOR, 'h4').text
-                                name =  f"{who_chatted} ({name})"
-                            except Exception:
-                                name = None
-                        if name == None:
-                            try: 
-                                name = msg_element.find_element(By.CSS_SELECTOR, 'span[class="html-span xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x1hl2dhg x16tdsg8 x1vvkbs xzpqnlu x1hyvwdk xjm9jq1 x6ikm8r x10wlt62 x10l6tqk x1i1rx1s"]').text
-                                name =  f"{who_chatted} ({name})"
-                            except Exception:
-                                name = None
-                        
-                        msg = None
-                        try:
-                            msg_frame = msg_element.find_element(By.CSS_SELECTOR, 'div[dir="auto"][class^="html-div "]')
-                            msg = msg_frame.text
-                            mentioned_to_me = msg_frame.find_elements(By.CSS_SELECTOR, f'a[href="https://www.facebook.com/{self_fbid}/"]')
-                            should_not_chat = should_not_chat and (len(mentioned_to_me) == 0) # when mute and not mentioned
-                        except Exception:
-                            pass
-                        
-                        try:
-                            image_elements = msg_element.find_elements(By.CSS_SELECTOR, 'img[class="xz74otr xmz0i5r x193iq5w"]')
-                            for image_element in image_elements:
-                                try:
-                                    data_uri = image_element.get_attribute("src")
-                                    _url = None
-                                    if data_uri.startswith("data:image/jpeg;base64,"):
-                                        # Extract the base64 string (remove the prefix)
-                                        base64_str = data_uri.split(",")[1]
-                                        # Decode the base64 string into binary data
-                                        image_data = base64.b64decode(base64_str)
-                                    else:
-                                        image_data = requests.get(data_uri).content
-                                        _url = data_uri
-
-                                    image_hashcode = md5(image_data).hexdigest()
-                                    image_name = f"files/img-{message_id}-{image_hashcode}"
-                                    image_name = image_name[:40]
-                                    os.makedirs(os.path.dirname(image_name), exist_ok=True)
-                                    # Use BytesIO to create a file-like object for the image
-                                    image_file = BytesIO(image_data)
-                                    bytesio_to_file(image_file, image_name)
-                                   
-                                    chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send image", "file_name" : image_name, "mime_type" : "image/jpeg" , "url" : _url, "loaded" : True }, "mentioned_message" : quotes_text})
-                                except Exception:
-                                    pass
-                        except Exception:
-                            pass
-
-                        try:
-                            video_element = msg_element.find_element(By.CSS_SELECTOR, 'video')
-                            video_url = video_element.get_attribute("src")
-                            video_data = get_file_data(driver, video_url)
-                            video_hashcode = md5(video_data).hexdigest()
-                            video_name = f"files/{video_hashcode}"
-                            video_name = video_name[:40]
-                            os.makedirs(os.path.dirname(video_name), exist_ok=True)
-                            video_file = BytesIO(video_data)
-                            bytesio_to_file(video_file, video_name)
-
-                            chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send video", "file_name" : video_name, "mime_type" : "video/mp4", "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
-                        except Exception:
-                            pass
-
-                        try:
-                            file_element = msg_element.find_element(By.CSS_SELECTOR, 'a[download]')
-                            file_url = file_element.get_attribute("href")
-                            file_down_name = file_element.get_attribute("download")
-                            file_ext, mime_type = get_mine_type(file_down_name)
-                            if check_supported_file(mime_type):
-                                file_data = get_file_data(driver, file_url)
-                                file_hashcode = md5(file_data).hexdigest()
-                                file_name = f"files/{file_hashcode}"
-                                file_name = file_name[:40]
-                                
-                                os.makedirs(os.path.dirname(file_name), exist_ok=True)
-                                file_file = BytesIO(file_data)
-                                bytesio_to_file(file_file, file_name)
-                                chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send file", "file_name" : file_name, "mime_type" : mime_type, "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
-                        except Exception:
-                            pass
-
-                        try: 
-                            react_elements = msg_element.find_elements(By.CSS_SELECTOR, 'img[height="32"][width="32"]')
-                            emojis = ""
-                            if msg == None and len(react_elements) > 0:
-                                for react_element in react_elements:
-                                    emojis += react_element.get_attribute("alt")
-                                msg = emojis
-                        except Exception:
-                            pass
-
-                        if msg == None:
-                            try:
-                                msg_element.find_element(By.CSS_SELECTOR, 'div[aria-label="Like, thumbs up"]')
-                                msg = "👍"
-                            except Exception:
-                                msg = None
-
-                        if msg == None:
-                            continue
-                        if name == None:
-                            name = "None"
-                        
-                        chat_history_new.insert(0, {"message_type" : mark, "info" : {"name" : name, "msg" : msg}, "mentioned_message" : quotes_text })
-
-                        try: 
-                            react_elements = msg_element.find_elements(By.CSS_SELECTOR, 'img[height="16"][width="16"]')
-                            emojis = ""
-                            if len(react_elements) > 0:
-                                for react_element in react_elements:
-                                    emojis += react_element.get_attribute("alt")
-                                emoji_info = f"The above message was reacted with following emojis: {emojis}"
-                                
-                                chat_history_new.insert(0, {"message_type" : "reactions", "info" : emoji_info})
-                                
-                        except Exception:
-                            pass
-
-                    print_with_time("Đã đọc xong!")
-
-                    def reset_chat(msg):
-                        global reset
-                        reset = True
-                        chat_histories[message_id] = [{"message_type" : "new_chat", "info" : msg}]
-                        return f'Bot reset with new memory "{msg}"'
-
-                    def mute_chat(mode):
-                        if mode == "true" or mode == "1":
-                            chat_histories["status"][message_id] = False
-                            return f'Bot has been muted'
-                        if mode == "false" or mode == "0":
-                            chat_histories["status"][message_id] = True
-                            return f'Bot has been unmuted'
-                        return f'Unknown mute mode! Use "1" to mute the bot or "0" to unmute the bot.'
-
-                    # Dictionary mapping arg1 to functions
-                    func = {                    
-                        "totp": totp_cmd,
-                        "reset": reset_chat,
-                        "mute" : mute_chat,
-                    }
-
-                    def parse_and_execute(command):
-                        # Parse the command
-                        args = shlex.split(command)
-                        
-                        # Check if the command starts with /cmd
-                        if len(args) < 3 or args[0] != "/cmd":
-                            return "Invalid command format. Use: /cmd arg1 arg2"
-                        
-                        # Extract arg1 and arg2
-                        arg1, arg2 = args[1], args[2]
-                        
-                        # Check if arg1 is in func and execute
-                        if arg1 in func:
-                            try:
-                                return func[arg1](arg2)
-                            except Exception as e:
-                                return f"Error while executing function: {e}"
-                        else:
-                            return f"Unknown command: {arg1}"
-
-                    for msg in chat_history_new:
-                        if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
-                            command_result += parse_and_execute(msg["info"]["msg"]) + "\n"
-
-                    chat_history.extend(chat_history_new)
-
-                    if len(chat_history) <= 0:
-                        continue
-                    last_msg = chat_history[-1]
-                    for msg in reversed(chat_history):
-                        if num_video >= max_video and num_file >= max_file:
-                            break
-                        if msg["message_type"] == "file":
-                            if num_video < max_video and msg["info"]["msg"] == "send video":
-                                msg["info"]["loaded"] = True
-                                num_video += 1
-                            if num_file < max_file and msg["info"]["msg"] == "send file":
-                                msg["info"]["loaded"] = True
-                                num_file += 1
-                    for msg in chat_history:
-                        final_last_msg = msg
-                        if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
-                            final_last_msg = copy.deepcopy(msg)
-                            final_last_msg["info"]["msg"] = "<This is command message. It has been hidden>"
-                        prompt_list.append(json.dumps(final_last_msg, ensure_ascii=False))
-                        if msg["message_type"] == "file" and msg["info"].get("loaded", False):
-                            file_name = msg["info"]["file_name"]
-                            mime_type = msg["info"]["mime_type"]
-                            try:
-                                file_upload = genai.get_file(file_name)
-                            except Exception:
-                                try:
-                                    if msg["info"]["url"] is not None:
-                                        get_raw_file(msg["info"]["url"], msg["info"]["file_name"])
-                                    file_upload = genai.upload_file(path = file_name, mime_type = mime_type, name = file_name)
-                                except Exception as e:
-                                    print_with_time(e)
-                                    continue
-                            prompt_list.append(file_upload)
-
-                    if "debug" in work_jobs:
-                        for prompt in prompt_list:
-                            print_with_time(prompt)
-                    else:
-                        print_with_time(f"<{len(chat_history)} tin nhắn từ {who_chatted}>")
-
-                    if last_msg["message_type"] == "your_text_message":
-                        continue
-                    is_command_msg = last_msg["message_type"] == "text_message" and is_cmd(last_msg["info"]["msg"])
-                        
-              
-                    prompt_list.insert(0, header_prompt)
-                    exam = json.dumps({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : "YOUR MESSAGE HERE BUT ENSURE ASCII IS OFF 😊"}, "mentioned_message" : None }, ensure_ascii=False)
-                    prompt_list.append(f'>> Provide JSON to answer, no markdown, no ensure ASCII, example: \n```json\n{exam}\n```')
-                    
-                    caption = None
-                    
-                    if command_result:
-                        try:
-                            button = get_message_input()
-                            driver.execute_script("arguments[0].click();", button)
-                            get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
-                            get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
-                            time.sleep(0.5)
-                            get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(command_result) + "\n"))
-                        except:
-                            pass
-                    for _x in range(10):
-                        if reset:
-                            break
-                        if should_not_chat:
-                            break
                         try:
                             button = get_message_input()
                             driver.execute_script("arguments[0].click();", button)
                             get_message_input().send_keys(" ")
-                            if caption is None and not is_command_msg:
-                                response = model.generate_content(prompt_list)
-                                if not response.candidates:
-                                    caption = "(y)"
+                        except Exception:
+                            pass
+                        
+                        try:
+                            profile_btn = driver.find_elements(By.CSS_SELECTOR, 'a[class="x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1o1ewxj x3x9cwd x1e5q0jg x13rtm0m x1q0g3np x87ps6o x1lku1pv x1rg5ohu x1a2a7pz xs83m0k"]')
+                            facebook_info = None
+                            if len(profile_btn) > 0:
+                                profile_btn = profile_btn[0]
+                                profile_link = urljoin(driver.current_url, profile_btn.get_attribute("href"))
+
+                                facebook_info = facebook_infos.get(profile_link)
+                                if facebook_info != None:
+                                    last_access_ts = facebook_info.get("Last access", 0)
+                                    
+                                    # Get the current time Unix timestamp minus 3 days (3 days = 3 * 24 * 60 * 60 seconds)
+                                    three_days_ago = int(time.time()) - 3 * 24 * 60 * 60
+                                    
+                                    if last_access_ts < three_days_ago:
+                                        facebook_info = None
+
+                                if facebook_info == None:
+                                    driver.switch_to.window(profile_tab)
+                                    driver.get(profile_link)
+                                    print_with_time(f"Đang lấy thông tin cá nhân từ {profile_link}")
+                                    
+                                    wait_for_load(driver)
+                                    time.sleep(0.5)
+                    
+                                    find_who_chatted = driver.find_elements(By.CSS_SELECTOR, 'h1[class^="html-h1 "]')
+                                    who_chatted = find_who_chatted[-1].text
+                                    
+                                    facebook_info = { "Facebook name" : who_chatted, "Facebook url" :  profile_link, "Last access" : int(time.time()) }
+                                    
+                                    # Loop through the profile sections
+                                    for sk in sk_list:
+                                        # Build the full URL for the profile section
+                                        info_url = urljoin(profile_link, sk)
+                                        driver.get(info_url)
+
+                                        # Wait for the page to load
+                                        wait_for_load(driver)
+                                        #time.sleep(0.5)
+
+                                        # Find the info elements
+                                        info_elements = driver.find_elements(By.CSS_SELECTOR, 'div[class="xyamay9 xqmdsaz x1gan7if x1swvt13"] > div')
+
+                                        # Loop through each info element
+                                        for info_element in info_elements:
+                                            title = find_and_get_text(info_element, By.CSS_SELECTOR, 'div[class="xieb3on x1gslohp"]')
+                                            if title is not None:
+                                                detail = []
+
+                                                # Append the text lists to the detail array
+                                                detail.extend(find_and_get_list_text(info_element, By.CSS_SELECTOR, 'div[class="x1hq5gj4"]'))
+                                                detail.extend(find_and_get_list_text(info_element, By.CSS_SELECTOR, 'div[class="xat24cr"]'))
+
+                                                # Add title and details to the facebook_info dictionary
+                                                facebook_info[title] = detail
+                                    
+                                    facebook_infos[profile_link] = facebook_info
                                 else:
-                                    caption = response.text
-                                    json_msg = extract_json_from_markdown(caption)
-                                    if json_msg:
-                                        caption = json_msg["info"]["msg"]
-                            if caption is not None and not is_command_msg:
-                                reply_msg, img_keywords = extract_image_keywords(caption)
+                                    who_chatted = facebook_info.get("Facebook name")
 
-                                print_with_time("AI Trả lời:", caption)
-                                if caption.strip() == "/SKIP":
-                                    break
-                                for img_keyword in img_keywords:
-                                    try:
-                                        while True:
-                                            try:
-                                                image_link = get_random_image_link(img_keyword, 40)
-                                                image_io = download_image_to_bytesio(image_link)
-                                            except:
-                                                continue
-                                            print_with_time(f"AI gửi ảnh {img_keyword} từ: {image_link}")
-                                            drop_image(driver, button, image_io)
-                                            break
-                                    except:
-                                        print_with_time(f"Không thể gửi ảnh: {img_keyword}")
-                                get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
-                                get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
-                                time.sleep(0.5)
-                                get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
-
-                            chat_history.append({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : caption}, "mentioned_message" : None })
-                            chat_histories[message_id] = chat_history[-500:]
-                            time.sleep(2)
-                            break
+                                last_access_ts = facebook_info.get("Last access", 0)
+                                facebook_info["Last access"] = int(time.time())
+                                if pickle_to_file(f_facebook_infos, facebook_infos) == False:
+                                    print_with_time(f"Không thể sao lưu vào {f_facebook_infos}")
+                                # First time upload
+                                if last_access_ts == 0 and (if_running_on_github_workflows):
+                                    upload_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE)
+                            else:
+                                is_group_chat = True
+                                who_chatted = chat_info["name"]
+                                facebook_info = { "Facebook group name" : who_chatted }
                         except Exception as e:
-                            if len(driver.find_elements(By.CSS_SELECTOR, 'div.x1n2onr6.x1ja2u2z.x9f619.x78zum5.xdt5ytf.x2lah0s.x193iq5w.xyamay9.xkh2ocl.x57kliw.x1epquy7.x13fuv20.x178xt8z.x1l90r2v')):
-                                break
-                            print_with_time("Thử lại:", _x + 1)
                             print_with_time(e)
-                            time.sleep(2)
                             continue
+
+                    while True:
+                        try:
+                            driver.switch_to.window(chat_tab)
+                            print_with_time("Tin nhắn mới từ " + who_chatted)
+                            print_with_time(json.dumps(facebook_info, ensure_ascii=False, indent=2))
+                            try:
+                                button = get_message_input()
+                                driver.execute_script("arguments[0].click();", button)
+                                get_message_input().send_keys(" ")
+                            except Exception:
+                                pass
+
+                            parsed_url = urlparse(driver.current_url)
+
+                            # Remove the trailing slash from the path, if it exists
+                            urlpath = parsed_url.path.rstrip("/")
+                            
+                            # Split the path and extract the ID
+                            path_parts = urlpath.split("/")
+                            message_id = path_parts[-1] if len(path_parts) > 1 else "0"
+
+                            time.sleep(1)
+                            # Wait until box is visible
+                            try:
+                                main = WebDriverWait(driver, 15).until(
+                                    EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
+                                )
+                            except Exception as e:
+                                print_with_time(e)
+                            try:
+                                msg_table = main.find_element(By.CSS_SELECTOR, 'div[role="grid"]')
+                            except Exception:
+                                continue
+                            try:
+                                msg_scroller = msg_table.find_element(By.CSS_SELECTOR, 'div[role="none"]')
+                                #for _x in range(30):
+                                #    # Scroll to the top of the message scroller
+                                #    driver.execute_script("arguments[0].scrollTop = 0;", msg_scroller)
+                                #    time.sleep(0.1)
+                            except Exception:
+                                msg_scroller = None
+
+                            time.sleep(1)
+
+
+                            
+                            prompt_list = []
+                                
+                            chat_history = chat_histories.get(message_id, [])
+                            if "debug" in work_jobs:
+                                print_with_time(json.dumps(chat_history, indent=4, ensure_ascii=False))
+                            chat_history_new = []
+
+                            header_prompt = get_header_prompt(get_day_and_time(), who_chatted, facebook_info)
+
+                            prompt_list.append(f'The Messenger conversation with "{who_chatted}" is as json here:')
+                            try:
+                                button = get_message_input()
+                                driver.execute_script("arguments[0].click();", button)
+                                get_message_input().send_keys(" ")
+                            except Exception:
+                                pass
+
+                            print_with_time("Đang đọc tin nhắn...")
+
+                            command_result = ""
+                            reset = False
+                            should_not_chat = chat_histories["status"].get(message_id, True) == False
+                            max_video = 10
+                            num_video = 0
+                            max_file = 10
+                            num_file = 0
+
+                            for _x in range(3):
+                                stop = False
+                                for msg_element in reversed(msg_table.find_elements(By.CSS_SELECTOR, 'div[role="row"]:not([__read])')):
+                                    try: 
+                                        msg_element.find_element(By.CSS_SELECTOR, 'div[class="html-div xexx8yu x4uap5 x18d9i69 xkhd6sd x1gslohp x11i5rnm x12nagc x1mh8g0r x1yc453h x126k92a xyk4ms5"]').text
+                                        # our msg, at this point we should shop reading if we cached previous one
+                                        if len(chat_history) > 0:
+                                            stop = True
+                                    except:
+                                        pass
+                                    driver.execute_script('arguments[0].setAttribute("__read", "yes");', msg_element)
+                                if stop:
+                                    break
+                                driver.execute_script("""
+                                        var divs = document.querySelectorAll('div.x78zum5.xdt5ytf[data-virtualized="false"], div.x78zum5.xdt5ytf[data-virtualized="true"]');
+                                        divs.forEach(function(div) {
+                                            var disabledDiv = document.createElement('disabled-div');
+                                            disabledDiv.innerHTML = div.innerHTML;  // Keep the content inside
+                                            div.parentNode.replaceChild(disabledDiv, div);  // Replace the div with the custom tag
+                                        });
+                                    """)
+                                driver.execute_script("arguments[0].scrollTop = 0;", msg_scroller)
+                                time.sleep(0.1)
+
+                            for msg_element in reversed(msg_table.find_elements(By.CSS_SELECTOR, 'div[role="row"]')):
+                                try:
+                                    timedate = msg_element.find_element(By.CSS_SELECTOR, 'span[class="x193iq5w xeuugli x13faqbe x1vvkbs x1xmvt09 x1lliihq x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x4zkp8e x676frb x1pg5gke xvq8zen xo1l8bm x12scifz"]')
+                                    chat_history_new.insert(0, {"message_type" : "conversation_event", "info" : timedate.text})
+                                except Exception:
+                                    pass
+
+                                try:
+                                    quotes_text = msg_element.find_element(By.CSS_SELECTOR, 'div[class="xi81zsa x126k92a"]').text
+                                except Exception:
+                                    quotes_text = None
+
+                                # Finding name
+                                stop = False
+                                try: 
+                                    msg_element.find_element(By.CSS_SELECTOR, 'div[class="html-div xexx8yu x4uap5 x18d9i69 xkhd6sd x1gslohp x11i5rnm x12nagc x1mh8g0r x1yc453h x126k92a xyk4ms5"]').text
+                                    if len(chat_history) > 0:
+                                        break
+                                    name = myname
+                                    mark = "your_text_message"
+                                except Exception:
+                                    name = None
+                                    mark = "text_message"
+
+                                if name == None:
+                                    try: 
+                                        name = msg_element.find_element(By.CSS_SELECTOR, 'img[class="x1rg5ohu x5yr21d xl1xv1r xh8yej3"]').get_attribute("alt")
+                                        name =  f"{who_chatted} ({name})"
+                                    except Exception:
+                                        name = None
+
+                                if name == None:
+                                    try: 
+                                        name = msg_element.find_element(By.CSS_SELECTOR, 'h4').text
+                                        name =  f"{who_chatted} ({name})"
+                                    except Exception:
+                                        name = None
+                                if name == None:
+                                    try: 
+                                        name = msg_element.find_element(By.CSS_SELECTOR, 'span[class="html-span xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x1hl2dhg x16tdsg8 x1vvkbs xzpqnlu x1hyvwdk xjm9jq1 x6ikm8r x10wlt62 x10l6tqk x1i1rx1s"]').text
+                                        name =  f"{who_chatted} ({name})"
+                                    except Exception:
+                                        name = None
+                                
+                                msg = None
+                                try:
+                                    msg_frame = msg_element.find_element(By.CSS_SELECTOR, 'div[dir="auto"][class^="html-div "]')
+                                    msg = msg_frame.text
+                                    mentioned_to_me = msg_frame.find_elements(By.CSS_SELECTOR, f'a[href="https://www.facebook.com/{self_fbid}/"]')
+                                    should_not_chat = should_not_chat and (len(mentioned_to_me) == 0) # when mute and not mentioned
+                                except Exception:
+                                    pass
+                                
+                                try:
+                                    image_elements = msg_element.find_elements(By.CSS_SELECTOR, 'img[class="xz74otr xmz0i5r x193iq5w"]')
+                                    for image_element in image_elements:
+                                        try:
+                                            data_uri = image_element.get_attribute("src")
+                                            _url = None
+                                            if data_uri.startswith("data:image/jpeg;base64,"):
+                                                # Extract the base64 string (remove the prefix)
+                                                base64_str = data_uri.split(",")[1]
+                                                # Decode the base64 string into binary data
+                                                image_data = base64.b64decode(base64_str)
+                                            else:
+                                                image_data = requests.get(data_uri).content
+                                                _url = data_uri
+
+                                            image_hashcode = md5(image_data).hexdigest()
+                                            image_name = f"files/img-{message_id}-{image_hashcode}"
+                                            image_name = image_name[:40]
+                                            os.makedirs(os.path.dirname(image_name), exist_ok=True)
+                                            # Use BytesIO to create a file-like object for the image
+                                            image_file = BytesIO(image_data)
+                                            bytesio_to_file(image_file, image_name)
+                                           
+                                            chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send image", "file_name" : image_name, "mime_type" : "image/jpeg" , "url" : _url, "loaded" : True }, "mentioned_message" : quotes_text})
+                                        except Exception:
+                                            pass
+                                except Exception:
+                                    pass
+
+                                try:
+                                    video_element = msg_element.find_element(By.CSS_SELECTOR, 'video')
+                                    video_url = video_element.get_attribute("src")
+                                    video_data = get_file_data(driver, video_url)
+                                    video_hashcode = md5(video_data).hexdigest()
+                                    video_name = f"files/{video_hashcode}"
+                                    video_name = video_name[:40]
+                                    os.makedirs(os.path.dirname(video_name), exist_ok=True)
+                                    video_file = BytesIO(video_data)
+                                    bytesio_to_file(video_file, video_name)
+
+                                    chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send video", "file_name" : video_name, "mime_type" : "video/mp4", "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
+                                except Exception:
+                                    pass
+
+                                try:
+                                    file_element = msg_element.find_element(By.CSS_SELECTOR, 'a[download]')
+                                    file_url = file_element.get_attribute("href")
+                                    file_down_name = file_element.get_attribute("download")
+                                    file_ext, mime_type = get_mine_type(file_down_name)
+                                    if check_supported_file(mime_type):
+                                        file_data = get_file_data(driver, file_url)
+                                        file_hashcode = md5(file_data).hexdigest()
+                                        file_name = f"files/{file_hashcode}"
+                                        file_name = file_name[:40]
+                                        
+                                        os.makedirs(os.path.dirname(file_name), exist_ok=True)
+                                        file_file = BytesIO(file_data)
+                                        bytesio_to_file(file_file, file_name)
+                                        chat_history_new.insert(0, {"message_type" : "file", "info" : {"name" : name, "msg" : "send file", "file_name" : file_name, "mime_type" : mime_type, "url" : None, "loaded" : False }, "mentioned_message" : quotes_text})
+                                except Exception:
+                                    pass
+
+                                try: 
+                                    react_elements = msg_element.find_elements(By.CSS_SELECTOR, 'img[height="32"][width="32"]')
+                                    emojis = ""
+                                    if msg == None and len(react_elements) > 0:
+                                        for react_element in react_elements:
+                                            emojis += react_element.get_attribute("alt")
+                                        msg = emojis
+                                except Exception:
+                                    pass
+
+                                if msg == None:
+                                    try:
+                                        msg_element.find_element(By.CSS_SELECTOR, 'div[aria-label="Like, thumbs up"]')
+                                        msg = "👍"
+                                    except Exception:
+                                        msg = None
+
+                                if msg == None:
+                                    continue
+                                if name == None:
+                                    name = "None"
+                                
+                                chat_history_new.insert(0, {"message_type" : mark, "info" : {"name" : name, "msg" : msg}, "mentioned_message" : quotes_text })
+
+                                try: 
+                                    react_elements = msg_element.find_elements(By.CSS_SELECTOR, 'img[height="16"][width="16"]')
+                                    emojis = ""
+                                    if len(react_elements) > 0:
+                                        for react_element in react_elements:
+                                            emojis += react_element.get_attribute("alt")
+                                        emoji_info = f"The above message was reacted with following emojis: {emojis}"
+                                        
+                                        chat_history_new.insert(0, {"message_type" : "reactions", "info" : emoji_info})
+                                        
+                                except Exception:
+                                    pass
+
+                            print_with_time("Đã đọc xong!")
+
+                            def reset_chat(msg):
+                                global reset
+                                reset = True
+                                chat_histories[message_id] = [{"message_type" : "new_chat", "info" : msg}]
+                                return f'Bot reset with new memory "{msg}"'
+
+                            def mute_chat(mode):
+                                if mode == "true" or mode == "1":
+                                    chat_histories["status"][message_id] = False
+                                    return f'Bot has been muted'
+                                if mode == "false" or mode == "0":
+                                    chat_histories["status"][message_id] = True
+                                    return f'Bot has been unmuted'
+                                return f'Unknown mute mode! Use "1" to mute the bot or "0" to unmute the bot.'
+
+                            # Dictionary mapping arg1 to functions
+                            func = {                    
+                                "totp": totp_cmd,
+                                "reset": reset_chat,
+                                "mute" : mute_chat,
+                            }
+
+                            def parse_and_execute(command):
+                                # Parse the command
+                                args = shlex.split(command)
+                                
+                                # Check if the command starts with /cmd
+                                if len(args) < 3 or args[0] != "/cmd":
+                                    return "Invalid command format. Use: /cmd arg1 arg2"
+                                
+                                # Extract arg1 and arg2
+                                arg1, arg2 = args[1], args[2]
+                                
+                                # Check if arg1 is in func and execute
+                                if arg1 in func:
+                                    try:
+                                        return func[arg1](arg2)
+                                    except Exception as e:
+                                        return f"Error while executing function: {e}"
+                                else:
+                                    return f"Unknown command: {arg1}"
+
+                            for msg in chat_history_new:
+                                if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
+                                    command_result += parse_and_execute(msg["info"]["msg"]) + "\n"
+
+                            chat_history.extend(chat_history_new)
+
+                            if len(chat_history) <= 0:
+                                break
+                            last_msg = chat_history[-1]
+                            for msg in reversed(chat_history):
+                                if num_video >= max_video and num_file >= max_file:
+                                    break
+                                if msg["message_type"] == "file":
+                                    if num_video < max_video and msg["info"]["msg"] == "send video":
+                                        msg["info"]["loaded"] = True
+                                        num_video += 1
+                                    if num_file < max_file and msg["info"]["msg"] == "send file":
+                                        msg["info"]["loaded"] = True
+                                        num_file += 1
+                            for msg in chat_history:
+                                final_last_msg = msg
+                                if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
+                                    final_last_msg = copy.deepcopy(msg)
+                                    final_last_msg["info"]["msg"] = "<This is command message. It has been hidden>"
+                                prompt_list.append(json.dumps(final_last_msg, ensure_ascii=False))
+                                if msg["message_type"] == "file" and msg["info"].get("loaded", False):
+                                    file_name = msg["info"]["file_name"]
+                                    mime_type = msg["info"]["mime_type"]
+                                    try:
+                                        file_upload = genai.get_file(file_name)
+                                    except Exception:
+                                        try:
+                                            if msg["info"]["url"] is not None:
+                                                get_raw_file(msg["info"]["url"], msg["info"]["file_name"])
+                                            file_upload = genai.upload_file(path = file_name, mime_type = mime_type, name = file_name)
+                                        except Exception as e:
+                                            print_with_time(e)
+                                            continue
+                                    prompt_list.append(file_upload)
+
+                            if "debug" in work_jobs:
+                                for prompt in prompt_list:
+                                    print_with_time(prompt)
+                            else:
+                                print_with_time(f"<{len(chat_history)} tin nhắn từ {who_chatted}>")
+
+                            if last_msg["message_type"] == "your_text_message":
+                                break
+                            is_command_msg = last_msg["message_type"] == "text_message" and is_cmd(last_msg["info"]["msg"])
+                                
+                      
+                            prompt_list.insert(0, header_prompt)
+                            exam = json.dumps({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : "YOUR MESSAGE HERE BUT ENSURE ASCII IS OFF 😊"}, "mentioned_message" : None }, ensure_ascii=False)
+                            prompt_list.append(f'>> Provide JSON to answer, no markdown, no ensure ASCII, example: \n```json\n{exam}\n```')
+                            
+                            caption = None
+                            
+                            if command_result:
+                                try:
+                                    button = get_message_input()
+                                    driver.execute_script("arguments[0].click();", button)
+                                    get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
+                                    get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
+                                    time.sleep(0.5)
+                                    get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(command_result) + "\n"))
+                                except:
+                                    pass
+                            for _x in range(10):
+                                if reset:
+                                    break
+                                if should_not_chat:
+                                    break
+                                try:
+                                    button = get_message_input()
+                                    driver.execute_script("arguments[0].click();", button)
+                                    get_message_input().send_keys(" ")
+                                    if caption is None and not is_command_msg:
+                                        response = model.generate_content(prompt_list)
+                                        if not response.candidates:
+                                            caption = "(y)"
+                                        else:
+                                            caption = response.text
+                                            json_msg = extract_json_from_markdown(caption)
+                                            if json_msg:
+                                                caption = json_msg["info"]["msg"]
+                                    if caption is not None and not is_command_msg:
+                                        reply_msg, img_keywords = extract_image_keywords(caption)
+
+                                        print_with_time("AI Trả lời:", caption)
+                                        if caption.strip() == "/SKIP":
+                                            break
+                                        for img_keyword in img_keywords:
+                                            try:
+                                                while True:
+                                                    try:
+                                                        image_link = get_random_image_link(img_keyword, 40)
+                                                        image_io = download_image_to_bytesio(image_link)
+                                                    except:
+                                                        continue
+                                                    print_with_time(f"AI gửi ảnh {img_keyword} từ: {image_link}")
+                                                    drop_image(driver, button, image_io)
+                                                    break
+                                            except:
+                                                print_with_time(f"Không thể gửi ảnh: {img_keyword}")
+                                        get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
+                                        get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
+                                        time.sleep(0.5)
+                                        get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
+
+                                    chat_history.append({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : caption}, "mentioned_message" : None })
+                                    chat_histories[message_id] = chat_history[-500:]
+                                    time.sleep(2)
+                                    break
+                                except NoSuchElementException:
+                                    print_with_time("Không thể trả lời")
+                                    break
+                                except Exception as e:
+                                    print_with_time("Thử lại:", _x + 1)
+                                    print_with_time(e)
+                                    time.sleep(2)
+                                    continue
+                            break
+                        except StaleElementReferenceException:
+                            pass
+                        except Exception as e:
+                            print_with_time(e)
+                            break
         except Exception as e:
             print_with_time(e)
 
