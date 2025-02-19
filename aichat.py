@@ -823,7 +823,7 @@ try:
                                 
                       
                             prompt_list.insert(0, header_prompt)
-                            exam = json.dumps({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : "YOUR MESSAGE HERE BUT ENSURE ASCII IS OFF 😊"}, "mentioned_message" : None }, ensure_ascii=False)
+                            exam = json.dumps({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : "Your message is here - Tin nhắn ở đây 😊"}, "mentioned_message" : None }, ensure_ascii=False)
                             prompt_list.append(f'>> Provide JSON to answer, no markdown, no ensure ASCII, example: \n```json\n{exam}\n```')
                             
                             caption = None

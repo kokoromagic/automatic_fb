@@ -239,7 +239,7 @@ import re
 import json
 def extract_json_from_markdown(markdown_text):
     """Extracts the first JSON code block from a markdown string."""
-    pattern = r'```json\n(.*?)\n```'
+    pattern = r'```json(.*?)```'
     match = re.search(pattern, markdown_text, re.DOTALL)
     
     if match:
