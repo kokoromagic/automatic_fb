@@ -762,15 +762,13 @@ try:
                                 break
                             last_msg = chat_history[-1]
                             for msg in reversed(chat_history):
-                                if num_video >= max_video and num_file >= max_file:
-                                    break
                                 if msg["message_type"] == "file":
-                                    if num_video < max_video and msg["info"]["msg"] == "send video":
-                                        msg["info"]["loaded"] = True
-                                        num_video += 1
-                                    if num_file < max_file and msg["info"]["msg"] == "send file":
-                                        msg["info"]["loaded"] = True
-                                        num_file += 1
+                                    if msg["info"]["msg"] == "send video":
+                                        num_video += 1  # Increment first
+                                        msg["info"]["loaded"] = num_video <= max_video  # Compare after incrementing
+                                    elif msg["info"]["msg"] == "send file":
+                                        num_file += 1  # Increment first
+                                        msg["info"]["loaded"] = num_file <= max_file  # Compare after incrementing
                             for msg in chat_history:
                                 final_last_msg = msg
                                 if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
