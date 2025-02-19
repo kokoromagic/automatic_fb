@@ -871,7 +871,6 @@ try:
                         except Exception as e:
                             print_with_time(e)
                             break
-                driver.find_element(By.CSS_SELECTOR, 'path[d="M99.22 923.97a.75.75 0 0 0-.22.53v.75c0 .414.336.75.75.75h.75a.75.75 0 0 0 .53-.22l4.248-4.247a.25.25 0 0 0 0-.354l-1.457-1.457a.25.25 0 0 0-.354 0l-4.247 4.248z"]').click()
         except Exception as e:
             print_with_time(e)
 
