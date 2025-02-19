@@ -507,6 +507,7 @@ try:
                             prompt_list = []
                                 
                             chat_history = chat_histories.get(message_id, [])
+                            chat_history = chat_history[-500:]
                             if "debug" in work_jobs:
                                 print_with_time(json.dumps(chat_history, indent=4, ensure_ascii=False))
                             chat_history_new = []
@@ -861,7 +862,7 @@ try:
                                         get_message_input().send_keys(remove_non_bmp_characters(replace_emoji_with_shortcut(reply_msg) + "\n"))
 
                                     chat_history.append({"message_type" : "your_text_message", "info" : {"name" : myname, "msg" : caption}, "mentioned_message" : None })
-                                    chat_histories[message_id] = chat_history[-500:]
+                                    chat_histories[message_id] = chat_history
                                     time.sleep(2)
                                     break
                                 except NoSuchElementException:
