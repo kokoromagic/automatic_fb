@@ -498,11 +498,31 @@ try:
 
                             
                             prompt_list = []
+                            def process_chat_history(chat_history):
+                                result = []
+                                for msg in chat_history:
+                                    final_last_msg = msg
+                                    if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
+                                        final_last_msg = copy.deepcopy(msg)
+                                        final_last_msg["info"]["msg"] = "<This is command message. It has been hidden>"
+                                    result.append(json.dumps(final_last_msg, ensure_ascii=False))
+                                    if msg["message_type"] == "file" and msg["info"].get("loaded", False):
+                                        file_name = msg["info"]["file_name"]
+                                        mime_type = msg["info"]["mime_type"]
+                                        try:
+                                            file_upload = genai.get_file(file_name)
+                                        except Exception:
+                                            try:
+                                                if msg["info"]["url"] is not None:
+                                                    get_raw_file(msg["info"]["url"], msg["info"]["file_name"])
+                                                file_upload = genai.upload_file(path = file_name, mime_type = mime_type, name = file_name)
+                                            except Exception as e:
+                                                print_with_time(e)
+                                                continue
+                                        result.append(file_upload)
+                                return result
                                 
                             chat_history = chat_histories.get(message_id, [])
-                            chat_history = chat_history[-500:]
-                            if "debug" in work_jobs:
-                                print_with_time(json.dumps(chat_history, indent=4, ensure_ascii=False))
                             chat_history_new = []
 
                             header_prompt = get_header_prompt(get_day_and_time(), who_chatted, facebook_info)
@@ -619,7 +639,7 @@ try:
                                                 _url = data_uri
 
                                             image_hashcode = md5(image_data).hexdigest()
-                                            image_name = f"files/img-{message_id}-{image_hashcode}"
+                                            image_name = f"files/{image_hashcode}"
                                             image_name = image_name[:40]
                                             os.makedirs(os.path.dirname(image_name), exist_ok=True)
                                             # Use BytesIO to create a file-like object for the image
@@ -749,6 +769,33 @@ try:
                             for msg in chat_history_new:
                                 if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
                                     command_result += parse_and_execute(msg["info"]["msg"]) + "\n"
+                                    
+
+                            if len(chat_history) > 200:
+                                try:
+                                    # Summary old 100 messages
+                                    __num_video = 0
+                                    __num_file = 0
+                                    for msg in reversed(chat_history[:50]):
+                                        if msg["message_type"] == "file":
+                                            if msg["info"]["msg"] == "send video":
+                                                __num_video += 1  # Increment first
+                                                msg["info"]["loaded"] = __num_video <= max_video  # Compare after incrementing
+                                            elif msg["info"]["msg"] == "send file":
+                                                __num_file += 1  # Increment first
+                                                msg["info"]["loaded"] = __num_file <= max_file  # Compare after incrementing
+                                    prompt_to_summary = process_chat_history(chat_history[:50])
+                                    prompt_to_summary.append(">> Tell me information about this chat conversation in English, direct, unquoted and no markdown")
+                                    response = model.generate_content(prompt_to_summary)
+                                    if not response.candidates:
+                                        caption = "Old chat conversation is deleted"
+                                    else:
+                                        caption = response.text
+                                except Exception as e:
+                                    print(e)
+                                    caption = "Old chat conversation is deleted"
+                                chat_history = chat_history[-150:]
+                                chat_history.insert(0, {"message_type" : "summary_old_chat", "info" : caption})
 
                             chat_history.extend(chat_history_new)
 
@@ -763,32 +810,12 @@ try:
                                     elif msg["info"]["msg"] == "send file":
                                         num_file += 1  # Increment first
                                         msg["info"]["loaded"] = num_file <= max_file  # Compare after incrementing
-                            for msg in chat_history:
-                                final_last_msg = msg
-                                if msg["message_type"] == "text_message" and is_cmd(msg["info"]["msg"]):
-                                    final_last_msg = copy.deepcopy(msg)
-                                    final_last_msg["info"]["msg"] = "<This is command message. It has been hidden>"
-                                prompt_list.append(json.dumps(final_last_msg, ensure_ascii=False))
-                                if msg["message_type"] == "file" and msg["info"].get("loaded", False):
-                                    file_name = msg["info"]["file_name"]
-                                    mime_type = msg["info"]["mime_type"]
-                                    try:
-                                        file_upload = genai.get_file(file_name)
-                                    except Exception:
-                                        try:
-                                            if msg["info"]["url"] is not None:
-                                                get_raw_file(msg["info"]["url"], msg["info"]["file_name"])
-                                            file_upload = genai.upload_file(path = file_name, mime_type = mime_type, name = file_name)
-                                        except Exception as e:
-                                            print_with_time(e)
-                                            continue
-                                    prompt_list.append(file_upload)
+                            prompt_list.extend(process_chat_history(chat_history))
 
                             if "debug" in work_jobs:
                                 for prompt in prompt_list:
                                     print_with_time(prompt)
-                            else:
-                                print_with_time(f"<{len(chat_history)} tin nhắn từ {who_chatted}>")
+                            print_with_time(f"<{len(chat_history)} tin nhắn từ {who_chatted}>")
 
                             if last_msg["message_type"] == "your_text_message":
                                 break
