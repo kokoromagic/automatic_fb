@@ -85,6 +85,10 @@ try:
     
     driver.switch_to.new_window('tab')
     driver.execute_cdp_cmd('Emulation.setTimezoneOverride', tz_params)
+    monitor_tab = driver.current_window_handle
+    
+    driver.switch_to.new_window('tab')
+    driver.execute_cdp_cmd('Emulation.setTimezoneOverride', tz_params)
     friend_tab = driver.current_window_handle
 
     driver.switch_to.new_window('tab')
@@ -222,6 +226,8 @@ try:
     def init_fb():
         driver.switch_to.window(chat_tab)
         driver.get("https://www.facebook.com/messages/new")
+        driver.switch_to.window(monitor_tab)
+        driver.get("https://www.facebook.com/messages/new")
         driver.switch_to.window(friend_tab)
         driver.get("https://www.facebook.com/friends")
         driver.switch_to.window(worker_tab)
@@ -236,7 +242,6 @@ try:
     facebook_infos = pickle_from_file(f_facebook_infos, {})
 
     print_with_time("Bắt đầu khởi động!")
-    last_reload_ts = int(time.time())
 
     while True:
         try:
@@ -323,10 +328,15 @@ try:
                 inject_reload(driver)
 
             if "aichat" in work_jobs:
-                driver.switch_to.window(chat_tab)
-                if base_url_with_path(driver.current_url) != "www.facebook.com/messages/new" or (int(time.time()) - last_reload_ts) > 60:
+                driver.switch_to.window(monitor_tab)
+                if base_url_with_path(driver.current_url) != "www.facebook.com/messages/new":
                     driver.get("https://www.facebook.com/messages/new")
-                    last_reload_ts = int(time.time())
+
+                driver.switch_to.window(chat_tab)
+                if not base_url_with_path(driver.current_url).startswith("www.facebook.com/messages/"):
+                    driver.get("https://www.facebook.com/messages/new")
+
+                driver.switch_to.window(monitor_tab)
                 try:
                     if len(onetimecode) >= 6:
                         otc_input = driver.find_element(By.CSS_SELECTOR, 'input[autocomplete="one-time-code"]')
@@ -347,25 +357,24 @@ try:
                 except Exception:
                     pass
 
-                # find all unread single chats not group (span[class="x6s0dn4 xzolkzo x12go9s9 x1rnf11y xprq8jg x9f619 x3nfvp2 xl56j7k x1spa7qu x1kpxq89 xsmyaan"])
-                chat_btns = driver.find_elements(By.CSS_SELECTOR, 'a[href^="/messages/"]')
-                chat_list = []
-                for chat_btn in chat_btns:
+                chat_list = {}
+                for chat_btn in driver.find_elements(By.CSS_SELECTOR, 'a[href^="/messages/"]'):
                     #print_with_time(chat_btn.text)
                     try:
                         chat_btn.find_element(By.CSS_SELECTOR, 'span.x6s0dn4.xzolkzo.x12go9s9.x1rnf11y.xprq8jg.x9f619.x3nfvp2.xl56j7k.x1spa7qu.x1kpxq89.xsmyaan')
                         chat_name = chat_btn.find_element(By.CSS_SELECTOR, 'span.x1lliihq.x6ikm8r.x10wlt62.x1n2onr6.xlyipyv.xuxw1ft').text
-                        chat_list.append({ "obj" : chat_btn, "name" : chat_name })
+                        chat_list[chat_btn.get_attribute("href")] = chat_name
                     except Exception:
                         continue
 
+                driver.switch_to.window(chat_tab)
                 def get_message_input():
                     return driver.find_element(By.CSS_SELECTOR, 'p.xat24cr.xdj266r')
 
-                for chat_info in chat_list:
-                    if True:
+                for chat_btn in driver.find_elements(By.CSS_SELECTOR, 'a[href^="/messages/"]'):
+                    href = chat_btn.get_attribute("href")
+                    if chat_btn.get_attribute("href") in chat_list:
                         is_group_chat = False
-                        chat_btn = chat_info["obj"]
                         driver.execute_script("arguments[0].click();", chat_btn)
                         time.sleep(1)
                         
@@ -446,11 +455,13 @@ try:
                                     upload_file(GITHUB_TOKEN, GITHUB_REPO, f_facebook_infos, STORAGE_BRANCE)
                             else:
                                 is_group_chat = True
-                                who_chatted = chat_info["name"]
+                                who_chatted = chat_list[href]
                                 facebook_info = { "Facebook group name" : who_chatted }
                         except Exception as e:
                             print_with_time(e)
                             continue
+                    else:
+                        continue
 
                     while True:
                         try:
