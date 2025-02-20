@@ -790,7 +790,7 @@ try:
                                     else:
                                         caption = response.text
                                 except Exception as e:
-                                    print(e)
+                                    print_with_time(e)
                                     caption = "Old chat conversation is deleted"
                                 chat_history = chat_history[-150:]
                                 chat_history.insert(0, {"message_type" : "summary_old_chat", "info" : caption})
