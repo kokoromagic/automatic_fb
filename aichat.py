@@ -473,12 +473,10 @@ try:
                                 main = WebDriverWait(driver, 15).until(
                                     EC.visibility_of_element_located((By.CSS_SELECTOR, 'div[role="main"]'))
                                 )
-                            except Exception as e:
-                                print_with_time(e)
-                            try:
                                 msg_table = main.find_element(By.CSS_SELECTOR, 'div[role="grid"]')
-                            except Exception:
-                                continue
+                            except Exception as e:
+                                print_with_time("Không thể tải đoạn chat")
+                                break
                             try:
                                 msg_scroller = msg_table.find_element(By.CSS_SELECTOR, 'div[role="none"]')
                                 #for _x in range(30):
