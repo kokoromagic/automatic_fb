@@ -64,7 +64,7 @@ rules_prompt = """
 - Avoid unnecessary explanations or details beyond the reply itself.
 - Feel free to introduce yourself when meeting someone new.
 - Make the chat engaging by asking interesting questions.
-- In group chats, you should only reply when necessary. To skip replying, just say only "/SKIP" without any message or words.
+- In group chats, you can end the conversation — such as when saying goodbye, going offline, or leaving the group — by including [cmd]bye[/cmd] in your message.
 - To send the normal images, add one or more [image]keywords or image description[/image] into your message (Maximum 4 images).
 - To send the sexually explicit images, add one or more [adultimg]sexually explicit keywords or image description[/adultimg] into your message (Maximum 4 images).
 - Provide only the response content without introductory phrases or multiple options.
@@ -457,12 +457,6 @@ try:
                             driver.switch_to.window(chat_tab)
                             print_with_time("Tin nhắn mới từ " + who_chatted)
                             print_with_time(json.dumps(facebook_info, ensure_ascii=False, indent=2))
-                            try:
-                                button = get_message_input()
-                                driver.execute_script("arguments[0].click();", button)
-                                get_message_input().send_keys(" ")
-                            except Exception:
-                                pass
 
                             parsed_url = urlparse(driver.current_url)
 
@@ -620,7 +614,10 @@ try:
                                     msg_frame = msg_element.find_element(By.CSS_SELECTOR, 'div[dir="auto"][class^="html-div "]')
                                     msg = msg_frame.text
                                     mentioned_to_me = msg_frame.find_elements(By.CSS_SELECTOR, f'a[href="https://www.facebook.com/{self_fbid}/"]')
-                                    should_not_chat = should_not_chat and (len(mentioned_to_me) == 0) # when mute and not mentioned
+                                    if len(mentioned_to_me) > 0:
+                                        chat_histories["status"][message_id] = True
+                                        should_not_chat = False
+                                        chat_history.insert(0, {"message_type" : "new_chat", "info" : "You are mentioned in chat"})
                                 except Exception:
                                     pass
                                 
@@ -861,10 +858,11 @@ try:
                                         img_search = {}
                                         reply_msg, img_search["on"] = extract_keywords(r'\[image\](.*?)\[/image\]', caption)
                                         reply_msg, img_search["off"] = extract_keywords(r'\[adultimg\](.*?)\[/adultimg\]', reply_msg)
+                                        reply_msg, bot_commands = extract_keywords(r'\[cmd\](.*?)\[/cmd\]', reply_msg)
 
                                         print_with_time("AI Trả lời:", caption)
-                                        if caption.strip() == "/SKIP":
-                                            break
+                                        if "bye" in bot_commands:
+                                            chat_histories["status"][message_id] = False
                                         for adult, img_keywords in img_search.items():
                                             for img_keyword in img_keywords:
                                                 try:
