@@ -39,7 +39,7 @@ class Bing:
         }
         return filters.get(shorthand, "")
 
-    def get_image_links(self):
+    def get_image_links(self, function = None):
         image_links = []
         while len(image_links) < self.limit:
             if self.verbose:
@@ -72,6 +72,11 @@ class Bing:
                 if len(image_links) < self.limit and link not in self.seen:
                     self.seen.add(link)
                     image_links.append(link)
+                    if function:
+                        try:
+                            function(link)
+                        except Exception as e:
+                            print(e)
 
             self.page_counter += 1
 

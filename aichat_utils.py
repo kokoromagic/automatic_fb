@@ -263,7 +263,7 @@ def get_random_image_link(keyword, get = 10, adult = "on"):
             "*.vectorstock.com", "*.shutterstock.com", "*.gettyimages.com",
             "*.istockphoto.com", "*.dreamstime.com", "*.123rf.com",
             "*.depositphotos.com", "*.alamy.com", "*.bigstockphoto.com",
-            "*.adobestock.com"
+            "*.adobestock.com", "*.lpsg.com"
         ], verbose=False).get_image_links()
     return random.choice(img_links)
 
