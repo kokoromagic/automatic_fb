@@ -892,6 +892,7 @@ try:
                                     print_with_time(e)
                                     time.sleep(2)
                                     continue
+                            driver.back()
                             break
                         except StaleElementReferenceException:
                             pass
