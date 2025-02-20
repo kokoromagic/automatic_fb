@@ -868,7 +868,7 @@ try:
                                         for adult, img_keywords in img_search.items():
                                             for img_keyword in img_keywords:
                                                 try:
-                                                    while True:
+                                                    for _x in range(5):
                                                         try:
                                                             image_link = get_random_image_link(img_keyword, 40, adult)
                                                             image_io = download_image_to_bytesio(image_link)

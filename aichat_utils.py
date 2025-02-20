@@ -258,14 +258,32 @@ def extract_keywords(pattern, text):
 from bing_image import Bing
 import random
 
-def get_random_image_link(keyword, get = 10, adult = "on"):
-    img_links = Bing(keyword, get, adult, timeout=60, filter="", excludeSites=[
-            "*.vectorstock.com", "*.shutterstock.com", "*.gettyimages.com",
-            "*.istockphoto.com", "*.dreamstime.com", "*.123rf.com",
-            "*.depositphotos.com", "*.alamy.com", "*.bigstockphoto.com",
-            "*.adobestock.com", "*.lpsg.com"
-        ], verbose=False).get_image_links()
-    return random.choice(img_links)
+image_links_map = {}
+
+def get_random_image_link(keyword, get=10, adult="on"):
+    # Kiểm tra cache trước khi gọi API
+    img_links = image_links_map.get((keyword, get, adult))
+
+    if not img_links:
+        try:
+            # Gọi API Bing để tìm ảnh
+            img_links = Bing(keyword, get, adult, timeout=60, filter="", excludeSites=[
+                "*.vectorstock.com", "*.shutterstock.com", "*.gettyimages.com",
+                "*.istockphoto.com", "*.dreamstime.com", "*.123rf.com",
+                "*.depositphotos.com", "*.alamy.com", "*.bigstockphoto.com",
+                "*.adobestock.com", "*.lpsg.com"
+            ], verbose=False).get_image_links()
+            
+            # Kiểm tra xem kết quả có hợp lệ không
+            if img_links:
+                image_links_map[(keyword, get, adult)] = img_links
+            else:
+                return None  # Trả về None nếu không tìm thấy ảnh
+        except Exception as e:
+            print(f"Error fetching images: {e}")
+            return None  # Tránh lỗi làm crash chương trình
+    
+    return random.choice(img_links) if img_links else None
 
 import mimetypes
 import os
