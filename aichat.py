@@ -65,7 +65,8 @@ rules_prompt = """
 - Feel free to introduce yourself when meeting someone new.
 - Make the chat engaging by asking interesting questions.
 - In group chats, you should only reply when necessary. To skip replying, just say only "/SKIP" without any message or words.
-- To send the images, add [image]keywords or image description[/image] into your message (Maximum 4 images).
+- To send the normal images, add one or more [image]keywords or image description[/image] into your message (Maximum 4 images).
+- To send the sexually explicit images, add one or more [adultimg]sexually explicit keywords or image description[/adultimg] into your message (Maximum 4 images).
 - Provide only the response content without introductory phrases or multiple options.
 """
 
@@ -857,24 +858,27 @@ try:
                                             if json_msg:
                                                 caption = json_msg["info"]["msg"]
                                     if caption is not None and not is_command_msg:
-                                        reply_msg, img_keywords = extract_image_keywords(caption)
+                                        img_search = {}
+                                        reply_msg, img_search["on"] = extract_keywords(r'\[image\](.*?)\[/image\]', caption)
+                                        reply_msg, img_search["off"] = extract_keywords(r'\[adultimg\](.*?)\[/adultimg\]', reply_msg)
 
                                         print_with_time("AI Trả lời:", caption)
                                         if caption.strip() == "/SKIP":
                                             break
-                                        for img_keyword in img_keywords:
-                                            try:
-                                                while True:
-                                                    try:
-                                                        image_link = get_random_image_link(img_keyword, 40)
-                                                        image_io = download_image_to_bytesio(image_link)
-                                                    except:
-                                                        continue
-                                                    print_with_time(f"AI gửi ảnh {img_keyword} từ: {image_link}")
-                                                    drop_image(driver, button, image_io)
-                                                    break
-                                            except:
-                                                print_with_time(f"Không thể gửi ảnh: {img_keyword}")
+                                        for adult, img_keywords in img_search.items():
+                                            for img_keyword in img_keywords:
+                                                try:
+                                                    while True:
+                                                        try:
+                                                            image_link = get_random_image_link(img_keyword, 40, adult)
+                                                            image_io = download_image_to_bytesio(image_link)
+                                                        except:
+                                                            continue
+                                                        print_with_time(f"AI gửi ảnh {img_keyword} từ: {image_link}")
+                                                        drop_image(driver, button, image_io)
+                                                        break
+                                                except:
+                                                    print_with_time(f"Không thể gửi ảnh: {img_keyword}")
                                         get_message_input().send_keys(Keys.CONTROL + "a")  # Select all text
                                         get_message_input().send_keys(Keys.DELETE)  # Delete the selected text
                                         time.sleep(0.5)

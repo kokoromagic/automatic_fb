@@ -250,8 +250,7 @@ def extract_json_from_markdown(markdown_text):
     
     return None
 
-def extract_image_keywords(text):
-    pattern = r'\[image\](.*?)\[/image\]'
+def extract_keywords(pattern, text):
     keywords = re.findall(pattern, text)  # Extract keywords
     cleaned_text = re.sub(pattern, '', text)  # Remove tags from text
     return cleaned_text.strip(), keywords
@@ -259,8 +258,8 @@ def extract_image_keywords(text):
 from bing_image import Bing
 import random
 
-def get_random_image_link(keyword, get = 10):
-    img_links = Bing(keyword, get, "off", timeout=60, filter="", excludeSites=[
+def get_random_image_link(keyword, get = 10, adult = "on"):
+    img_links = Bing(keyword, get, adult, timeout=60, filter="", excludeSites=[
             "*.vectorstock.com", "*.shutterstock.com", "*.gettyimages.com",
             "*.istockphoto.com", "*.dreamstime.com", "*.123rf.com",
             "*.depositphotos.com", "*.alamy.com", "*.bigstockphoto.com",
